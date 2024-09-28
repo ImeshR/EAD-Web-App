@@ -21,72 +21,39 @@ const VendorManagementContent = () => {
           </Col>
         </Row>
       </Form>
-      <Table
-        striped
-        bordered
-        hover
-      >
+      <Table striped bordered hover>
         <thead>
           <tr>
-            <th>Product Name</th>
-            <th>Vendor</th>
-            <th>Current Stock</th>
-            <th>Status</th>
+            <th>Inventory ID</th>
+            <th>Product ID</th>
+            <th>Vendor ID</th>
+            <th>Quantity Available</th>
+            <th>Low Stock Alert</th>
+            <th>Last Updated</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Smartphone X</td>
-            <td>Acme Inc.</td>
+            <td>12345-abcde</td>
+            <td>67890-fghij</td>
+            <td>11111-aaaaa</td>
             <td>50</td>
+            <td><Badge bg="success">No</Badge></td>
+            <td>2023-05-01</td>
             <td>
-              <Badge bg="success">In Stock</Badge>
-            </td>
-            <td>
-              <Button
-                variant="outline-primary"
-                size="sm"
-              >
-                Update Stock
-              </Button>
+              <Button variant="outline-primary" size="sm">Update Stock</Button>
             </td>
           </tr>
           <tr>
-            <td>T-Shirt</td>
-            <td>XYZ Corp</td>
+            <td>67890-fghij</td>
+            <td>12345-abcde</td>
+            <td>22222-bbbbb</td>
             <td>5</td>
+            <td><Badge bg="warning" text="dark">Yes</Badge></td>
+            <td>2023-05-02</td>
             <td>
-              <Badge
-                bg="warning"
-                text="dark"
-              >
-                Low Stock
-              </Badge>
-            </td>
-            <td>
-              <Button
-                variant="outline-primary"
-                size="sm"
-              >
-                Update Stock
-              </Button>
-            </td>
-          </tr>
-          <tr>
-            <td>Headphones</td>
-            <td>Acme Inc.</td>
-            <td>0</td>
-            <td>
-              <Badge bg="danger">Out of Stock</Badge>
-            </td>
-            <td>
-              <Button
-                variant="outline-primary"
-                size="sm"
-              >
-                Update Stock
-              </Button>
+              <Button variant="outline-primary" size="sm">Update Stock</Button>
             </td>
           </tr>
         </tbody>

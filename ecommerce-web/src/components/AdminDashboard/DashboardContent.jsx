@@ -1,43 +1,20 @@
 import React from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Row, Col, Card, Button } from "react-bootstrap";
-import { Bell, Package, ShoppingCart, Users } from "react-feather";
+import { Package, ShoppingCart, Users, Briefcase } from "react-feather";
 
 const DashboardContent = () => {
   return (
-    <div>
+<div>
       <h2 className="mt-4">Dashboard</h2>
       <Row>
         {[
-          {
-            title: "Total Users",
-            value: "1,234",
-            icon: <Users size={24} />,
-            color: "primary",
-          },
-          {
-            title: "Total Products",
-            value: "5,678",
-            icon: <Package size={24} />,
-            color: "success",
-          },
-          {
-            title: "Total Orders",
-            value: "9,101",
-            icon: <ShoppingCart size={24} />,
-            color: "info",
-          },
-          {
-            title: "System Alerts",
-            value: "3",
-            icon: <Bell size={24} />,
-            color: "warning",
-          },
+          { title: 'Total Users', value: '1,234', icon: <Users size={24} />, color: 'primary' },
+          { title: 'Total Products', value: '5,678', icon: <Package size={24} />, color: 'success' },
+          { title: 'Total Orders', value: '9,101', icon: <ShoppingCart size={24} />, color: 'info' },
+          { title: 'Total Vendors', value: '456', icon: <Briefcase size={24} />, color: 'warning' },
         ].map((stat, index) => (
-          <Col
-            md={3}
-            key={index}
-          >
+          <Col md={4} key={index}>
             <Card className={`mb-4 bg-${stat.color} text-white`}>
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-center">
@@ -54,22 +31,9 @@ const DashboardContent = () => {
       </Row>
       <h3>Quick Links</h3>
       <Row>
-        {[
-          "Manage Users",
-          "Manage Vendors",
-          "Manage Products",
-          "Manage Orders",
-        ].map((link, index) => (
-          <Col
-            md={3}
-            key={index}
-          >
-            <Button
-              variant="outline-primary"
-              className="w-100 mb-3"
-            >
-              {link}
-            </Button>
+        {['Manage Users', 'Manage Vendors', 'Manage Products', 'Manage Orders', 'View Payments', 'View Comments'].map((link, index) => (
+          <Col md={4} key={index}>
+            <Button variant="outline-primary" className="w-100 mb-3">{link}</Button>
           </Col>
         ))}
       </Row>

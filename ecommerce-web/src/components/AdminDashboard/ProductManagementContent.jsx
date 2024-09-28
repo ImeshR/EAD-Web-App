@@ -51,76 +51,44 @@ const VendorManagementContent = () => {
           </Col>
         </Row>
       </Form>
-      <Table
-        striped
-        bordered
-        hover
-      >
+      <Table striped bordered hover>
         <thead>
           <tr>
-            <th>Product Name</th>
+            <th>Product ID</th>
+            <th>Name</th>
             <th>Vendor</th>
             <th>Category</th>
             <th>Price</th>
-            <th>Stock</th>
+            <th>Stock Level</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr>
+            <td>12345-abcde</td>
             <td>Smartphone X</td>
             <td>Acme Inc.</td>
             <td>Electronics</td>
             <td>$599.99</td>
             <td>50</td>
+            <td><Badge bg="success">Active</Badge></td>
             <td>
-              <Badge bg="success">Active</Badge>
-            </td>
-            <td>
-              <Button
-                variant="outline-primary"
-                size="sm"
-                className="me-2"
-              >
-                Edit
-              </Button>
-              <Button
-                variant="outline-danger"
-                size="sm"
-              >
-                Deactivate
-              </Button>
+              <Button variant="outline-primary" size="sm" className="me-2">Edit</Button>
+              <Button variant="outline-danger" size="sm">Deactivate</Button>
             </td>
           </tr>
           <tr>
+            <td>67890-fghij</td>
             <td>T-Shirt</td>
             <td>XYZ Corp</td>
             <td>Clothing</td>
             <td>$19.99</td>
             <td>5</td>
+            <td><Badge bg="warning" text="dark">Low Stock</Badge></td>
             <td>
-              <Badge
-                bg="warning"
-                text="dark"
-              >
-                Low Stock
-              </Badge>
-            </td>
-            <td>
-              <Button
-                variant="outline-primary"
-                size="sm"
-                className="me-2"
-              >
-                Edit
-              </Button>
-              <Button
-                variant="outline-danger"
-                size="sm"
-              >
-                Deactivate
-              </Button>
+              <Button variant="outline-primary" size="sm" className="me-2">Edit</Button>
+              <Button variant="outline-danger" size="sm">Deactivate</Button>
             </td>
           </tr>
         </tbody>
