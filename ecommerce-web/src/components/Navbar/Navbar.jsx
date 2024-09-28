@@ -1,28 +1,71 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
+import { Search, Bell } from "react-feather";
 
-const Navbar = () => {
+const NavBar = () => {
+  // State to store user role and profile picture
+  const [userRole, setUserRole] = useState("admin"); // Default to admin
+  const [profileImage, setProfileImage] = useState(
+    "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+  );
+
+  // Determine navbar theme and style based on the user role
+  const getNavBarStyle = () => {
+    switch (userRole) {
+      case "vendor":
+        return { bg: "primary", variant: "light" };
+      case "csr":
+        return { bg: "", variant: "light", customStyle: { backgroundColor: "#6a0dad" } };
+      default:
+        return { bg: "dark", variant: "dark" }; // Admin by default
+    }
+  };
+
+  const { bg, variant, customStyle } = getNavBarStyle();
+
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-light">
-      <Link className="navbar-brand" to="/dashboard">E-commerce</Link>
-      <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span className="navbar-toggler-icon"></span>
-      </button>
-      <div className="collapse navbar-collapse" id="navbarNav">
-        <ul className="navbar-nav">
-          <li className="nav-item">
-            <Link className="nav-link" to="/users">User Management</Link>
-          </li>
-          <li className="nav-item">
-            <Link className="nav-link" to="/products">Product Management</Link>
-          </li>
-          <li className="nav-item">
-            <Link className="nav-link" to="/orders">Order Management</Link>
-          </li>
-        </ul>
-      </div>
-    </nav>
+    <Navbar
+      bg={bg}
+      variant={variant}
+      style={customStyle}
+      className="mb-3"
+    >
+      <Container fluid>
+        <Navbar.Brand href="#home">Admin Dashboard</Navbar.Brand>
+        <Navbar.Toggle />
+        <Navbar.Collapse className="justify-content-end">
+          <Nav className="me-auto">
+            <Nav.Link href="#search">
+              <Search size={18} />
+            </Nav.Link>
+            <Nav.Link href="#notifications">
+              <Bell size={18} />
+            </Nav.Link>
+          </Nav>
+          <NavDropdown
+            title={
+              <img
+                src={profileImage}
+                alt="User"
+                className="rounded-circle"
+                width="50"
+                height="50"
+              />
+            }
+            id="basic-nav-dropdown"
+            align="end"
+            menuVariant={variant === "dark" ? "dark" : "light"} // Match the dropdown theme to the navbar variant
+            className="dropdown-menu-end"
+          >
+            <NavDropdown.Item href="#profile">Profile</NavDropdown.Item>
+            <NavDropdown.Item href="#settings">Settings</NavDropdown.Item>
+            <NavDropdown.Divider />
+            <NavDropdown.Item href="#logout">Logout</NavDropdown.Item>
+          </NavDropdown>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
   );
 }
 
-export default Navbar;
+export default NavBar;

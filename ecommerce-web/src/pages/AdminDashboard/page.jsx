@@ -16,7 +16,7 @@ import VendorManagementContent from "../../components/AdminDashboard/VendorManag
 import ProductManagementContent from "../../components/AdminDashboard/ProductManagementContent";
 import OrderManagementContent from "../../components/AdminDashboard/OrderManagementContent";
 import InventoryManagementContent from "../../components/AdminDashboard/InventoryManagementContent";
-import NavBar from "../../components/Navbar";
+import NavBar from "../../components/Navbar/Navbar";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
