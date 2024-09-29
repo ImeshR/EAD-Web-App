@@ -54,7 +54,7 @@ export default function AdminDashboard() {
               <Nav.Link
                 onClick={() => setActiveTab("dashboard")}
                 active={activeTab === "dashboard"}
-                className="text-white"
+                className="text-white  py-3 px-4"
               >
                 <BarChart2
                   size={18}
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
               <Nav.Link
                 onClick={() => setActiveTab("users")}
                 active={activeTab === "users"}
-                className="text-white"
+                className="text-white  py-3 px-4"
               >
                 <Users
                   size={18}
@@ -76,7 +76,7 @@ export default function AdminDashboard() {
               <Nav.Link
                 onClick={() => setActiveTab("vendors")}
                 active={activeTab === "vendors"}
-                className="text-white"
+                className="text-white  py-3 px-4"
               >
                 <Briefcase
                   size={18}
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
               <Nav.Link
                 onClick={() => setActiveTab("products")}
                 active={activeTab === "products"}
-                className="text-white"
+                className="text-white  py-3 px-4"
               >
                 <Package
                   size={18}
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
               <Nav.Link
                 onClick={() => setActiveTab("orders")}
                 active={activeTab === "orders"}
-                className="text-white"
+                className="text-white  py-3 px-4"
               >
                 <ShoppingCart
                   size={18}
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
               <Nav.Link
                 onClick={() => setActiveTab("inventory")}
                 active={activeTab === "inventory"}
-                className="text-white"
+                className="text-white  py-3 px-4"
               >
                 <Package
                   size={18}
