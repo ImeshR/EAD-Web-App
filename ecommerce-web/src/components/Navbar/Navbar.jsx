@@ -3,19 +3,18 @@ import { Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
 import { Search, Bell } from "react-feather";
 
 const NavBar = ({ userRole, profileImage }) => {
-  // Determine navbar theme and style based on the user role
   const getNavBarStyle = () => {
     switch (userRole) {
       case "vendor":
-        return { bg: "primary", variant: "light" };
+        return { bg: "primary", variant: "dark" , name: "Vendor Dashboard"};
       case "csr":
-        return { bg: "", variant: "light", customStyle: { backgroundColor: "#6a0dad" } };
+        return { bg: "", variant: "dark", customStyle: { backgroundColor: "#6a0dad" } , name: "CSR Dashboard"};
       default:
-        return { bg: "dark", variant: "dark" };
+        return { bg: "dark", variant: "dark" , name: "Admin Dashboard"};
     }
   };
 
-  const { bg, variant, customStyle } = getNavBarStyle();
+  const { bg, variant, customStyle , name } = getNavBarStyle();
 
   return (
     <Navbar
@@ -25,7 +24,7 @@ const NavBar = ({ userRole, profileImage }) => {
       className="mb-3"
     >
       <Container fluid>
-        <Navbar.Brand href="#home">Admin Dashboard</Navbar.Brand>
+        <Navbar.Brand href="#home">{name}</Navbar.Brand>
         <Navbar.Toggle />
         <Navbar.Collapse className="justify-content-end">
           <Nav className="me-auto">
