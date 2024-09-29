@@ -1,14 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
 import { Search, Bell } from "react-feather";
 
-const NavBar = () => {
-  // State to store user role and profile picture
-  const [userRole, setUserRole] = useState("admin"); // Default to admin
-  const [profileImage, setProfileImage] = useState(
-    "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-  );
-
+const NavBar = ({ userRole, profileImage }) => {
   // Determine navbar theme and style based on the user role
   const getNavBarStyle = () => {
     switch (userRole) {
@@ -17,7 +11,7 @@ const NavBar = () => {
       case "csr":
         return { bg: "", variant: "light", customStyle: { backgroundColor: "#6a0dad" } };
       default:
-        return { bg: "dark", variant: "dark" }; // Admin by default
+        return { bg: "dark", variant: "dark" };
     }
   };
 
@@ -45,7 +39,7 @@ const NavBar = () => {
           <NavDropdown
             title={
               <img
-                src={profileImage}
+                src="https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
                 alt="User"
                 className="rounded-circle"
                 width="50"
