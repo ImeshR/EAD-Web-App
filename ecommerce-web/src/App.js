@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import "./App.css";
-import Navbar from "./components/Navbar/Navbar";
 import AdminDashboard from "./pages/AdminDashboard/page";
+import CSRDashboard from "./pages/CSRDashboard/page";
 
 
 function App() {
@@ -9,6 +9,7 @@ function App() {
     <div>
       <Routes>
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/csr-dashboard" element={<CSRDashboard/>} />
       </Routes>
     </div>
   );
