@@ -4,6 +4,8 @@ import AdminDashboard from "./pages/AdminDashboard/page";
 import CSRDashboard from "./pages/CSRDashboard/page";
 import Login from "./pages/Login/page";
 import MyProfile from "./pages/MyProfile/page";
+import Notifications from "./pages/Notifications/page";
+import Reports from "./pages/Reports/page";
 
 
 function App() {
@@ -12,6 +14,8 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<MyProfile/>} />
+        <Route path="/notification" element={<Notifications />} />
+        <Route path="/report" element={<Reports />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/csr-dashboard" element={<CSRDashboard/>} />
       </Routes>
