@@ -1,30 +1,40 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import {
-  Container,
-  Row,
-  Col,
-  Nav,
-  Card,
-  Navbar,
-  NavDropdown,
   Table,
   Button,
   Badge,
   Form,
-  Modal,
+  Modal
 } from "react-bootstrap";
 
-const CustomerSupportContent = ({ handleShowModal }) => {
+const CustomerSupportContent = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalBody, setModalBody] = useState("");
+
+  const [orderId, setOrderId] = useState("");
+  const [note, setNote] = useState("");
+
+  const handleShowModal = (title, body) => {
+    setModalTitle(title);
+    setModalBody(body);
+    setShowModal(true);
+  };
+
+  const handleAddNote = (e) => {
+    e.preventDefault();
+    // Here you can add logic to save the note for the specified order
+    console.log(`Note for Order ${orderId}: ${note}`);
+    setOrderId("");
+    setNote("");
+  };
+
   return (
     <div>
       <h2 className="mt-4">Customer Support</h2>
       <h3>Open Queries</h3>
-      <Table
-        striped
-        bordered
-        hover
-      >
+      <Table striped bordered hover>
         <thead>
           <tr>
             <th>Query ID</th>
@@ -58,30 +68,26 @@ const CustomerSupportContent = ({ handleShowModal }) => {
               >
                 View Details
               </Button>
-              <Button
-                variant="success"
-                size="sm"
-                className="me-2"
-              >
+              <Button variant="success" size="sm" className="me-2">
                 Resolve
               </Button>
-              <Button
-                variant="info"
-                size="sm"
-              >
+              <Button variant="info" size="sm">
                 Escalate
               </Button>
             </td>
           </tr>
         </tbody>
       </Table>
+
       <h3 className="mt-4">Add Note to Order</h3>
-      <Form>
+      <Form onSubmit={handleAddNote}>
         <Form.Group className="mb-3">
           <Form.Label>Order ID</Form.Label>
           <Form.Control
             type="text"
             placeholder="Enter Order ID"
+            value={orderId}
+            onChange={(e) => setOrderId(e.target.value)}
           />
         </Form.Group>
         <Form.Group className="mb-3">
@@ -89,15 +95,27 @@ const CustomerSupportContent = ({ handleShowModal }) => {
           <Form.Control
             as="textarea"
             rows={3}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
           />
         </Form.Group>
-        <Button
-          variant="primary"
-          type="submit"
-        >
+        <Button variant="primary" type="submit">
           Add Note
         </Button>
       </Form>
+
+      {/* Modal for Query Details */}
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>{modalTitle}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>{modalBody}</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
