@@ -2,31 +2,35 @@ import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Table, Button, Badge, Modal, Form } from "react-bootstrap";
 import axios from "axios";
-import { ObjectId } from "bson";  // Import ObjectId from bson
+import Swal from "sweetalert2"; // Import SweetAlert2
 
 const UserManagementContent = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [newUser, setNewUser] = useState({
+    id: "",
     name: "",
     email: "",
-    role: "",
     password: "",
+    role: "",
+    phoneNumber: "",
+    address: "",
+    active: true,
   });
-  const [editUser, setEditUser] = useState(null); 
-  const [users, setUsers] = useState([]); 
-  const [roles, setRoles] = useState([]);
+  const [editUser, setEditUser] = useState(null); // State for editing a user
+  const [users, setUsers] = useState([]); // State for users
+  const [roles, setRoles] = useState([]); // State for roles
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem("token"); 
+        const token = localStorage.getItem("token"); // Get token from local storage
         const response = await axios.get("api/User", {
           headers: {
-            Authorization: `Bearer ${token}`, 
+            Authorization: `Bearer ${token}`, // Use Bearer token for authentication
           },
         });
-        setUsers(response.data.data); 
+        setUsers(response.data.data); // Set the users state with the fetched data
       } catch (error) {
         console.error("Error fetching users:", error);
       }
@@ -34,13 +38,13 @@ const UserManagementContent = () => {
 
     const fetchRoles = async () => {
       try {
-        const token = localStorage.getItem("token"); 
+        const token = localStorage.getItem("token"); // Get token from local storage
         const response = await axios.get("api/MasterData/GetRoles", {
           headers: {
-            Authorization: `Bearer ${token}`, 
+            Authorization: `Bearer ${token}`, // Use Bearer token for authentication
           },
         });
-        setRoles(response.data); 
+        setRoles(response.data); // Set the roles state with the fetched data
       } catch (error) {
         console.error("Error fetching roles:", error);
       }
@@ -57,10 +61,14 @@ const UserManagementContent = () => {
   const handleCloseCreateModal = () => {
     setShowCreateModal(false);
     setNewUser({
+      id: "",
       name: "",
       email: "",
-      role: "",
       password: "",
+      role: "",
+      phoneNumber: "",
+      address: "",
+      active: true,
     });
   };
 
@@ -85,21 +93,23 @@ const UserManagementContent = () => {
     }));
   };
 
+  const generateHexId = () => {
+    return [...Array(24)]
+      .map(() => Math.floor(Math.random() * 16).toString(16))
+      .join("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Generate a random 24-character hex string (ObjectId)
-    const id = new ObjectId().toHexString();
-
     const userPayload = {
-      id: id,
+      id: generateHexId(),
       name: newUser.name,
       email: newUser.email,
       password: newUser.password,
-      phoneNumber: "", // Empty string
-      address: "",     // Empty string
+      phoneNumber: newUser.phoneNumber || "",
+      address: newUser.address || "",
       role: newUser.role,
-      active: true,
+      active: newUser.active,
     };
 
     try {
@@ -110,19 +120,64 @@ const UserManagementContent = () => {
         },
       });
 
-      setUsers((prevUsers) => [...prevUsers, userPayload]); // Add new user to the list
+      setUsers((prevUsers) => [...prevUsers, userPayload]);
       handleCloseCreateModal();
+      Swal.fire({
+        title: "Success!",
+        text: "User created successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+      });
     } catch (error) {
       console.error("Error creating user:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "There was an error creating the user.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
     }
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
-    setUsers((prevUsers) =>
-      prevUsers.map((user) => (user.id === editUser.id ? editUser : user))
-    );
-    handleCloseEditModal();
+
+    const userPayload = {
+      id: editUser.id, // Use the ID of the user to be updated
+      name: editUser.name,
+      email: editUser.email,
+      // Leave password empty, as the password is not shown or updated
+      role: editUser.role,
+      active: editUser.active,
+    };
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(`api/User/${editUser.id}`, userPayload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setUsers((prevUsers) =>
+        prevUsers.map((user) => (user.id === editUser.id ? { ...user, ...userPayload } : user))
+      );
+      handleCloseEditModal();
+      Swal.fire({
+        title: "Success!",
+        text: "User updated successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+      });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "There was an error updating the user.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
   };
 
   const handleEditUser = (user) => {
@@ -130,25 +185,34 @@ const UserManagementContent = () => {
     setShowEditModal(true);
   };
 
+  // Function to get the role name by ID
   const getRoleName = (roleId) => {
     const role = roles.find((r) => r.id === roleId);
-    return role ? role.name : "Unknown Role";
+    return role ? role.name : "Unknown Role"; // Fallback if role not found
   };
 
   return (
     <div>
       <h2 className="mt-4">Manage Users</h2>
-      <Button variant="primary" className="mb-3" onClick={handleCreateUser}>
+      <Button
+        variant="primary"
+        className="mb-3"
+        onClick={handleCreateUser}
+      >
         Create New User
       </Button>
-      <Table striped bordered hover>
+      <Table
+        striped
+        bordered
+        hover
+      >
         <thead>
           <tr>
             <th>User ID</th>
+            <th>Name</th>
             <th>Email</th>
             <th>Role</th>
             <th>Status</th>
-            <th>Created At</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -156,8 +220,9 @@ const UserManagementContent = () => {
           {users.map((user) => (
             <tr key={user.id}>
               <td>{user.id}</td>
+              <td>{user.name}</td>
               <td>{user.email}</td>
-              <td>{getRoleName(user.role)}</td> 
+              <td>{getRoleName(user.role)}</td>
               <td>
                 <Badge
                   bg={user.active ? "success" : "warning"}
@@ -166,7 +231,6 @@ const UserManagementContent = () => {
                   {user.active ? "Active" : "Inactive"}
                 </Badge>
               </td>
-              <td>{user.createdAt || "N/A"}</td>
               <td>
                 <Button
                   variant="outline-primary"
@@ -177,11 +241,17 @@ const UserManagementContent = () => {
                   Edit
                 </Button>
                 {user.active ? (
-                  <Button variant="outline-danger" size="sm">
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                  >
                     Deactivate
                   </Button>
                 ) : (
-                  <Button variant="outline-success" size="sm">
+                  <Button
+                    variant="outline-success"
+                    size="sm"
+                  >
                     Approve
                   </Button>
                 )}
@@ -192,14 +262,17 @@ const UserManagementContent = () => {
       </Table>
 
       {/* Modal for Creating New User */}
-      <Modal show={showCreateModal} onHide={handleCloseCreateModal}>
+      <Modal
+        show={showCreateModal}
+        onHide={handleCloseCreateModal}
+      >
         <Modal.Header closeButton>
           <Modal.Title>Create New User</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3">
-              <Form.Label>User Name</Form.Label>
+              <Form.Label>Name</Form.Label>
               <Form.Control
                 type="text"
                 name="name"
@@ -239,22 +312,131 @@ const UserManagementContent = () => {
               >
                 <option value="">Select Role</option>
                 {roles.map((role) => (
-                  <option key={role.id} value={role.id}>
+                  <option
+                    key={role.id}
+                    value={role.id}
+                  >
                     {role.name}
                   </option>
                 ))}
               </Form.Control>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Phone Number</Form.Label>
+              <Form.Control
+                type="text"
+                name="phoneNumber"
+                value={newUser.phoneNumber}
+                onChange={handleInputChange}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Address</Form.Label>
+              <Form.Control
+                type="text"
+                name="address"
+                value={newUser.address}
+                onChange={handleInputChange}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="checkbox"
+                label="Active"
+                checked={newUser.active}
+                onChange={(e) =>
+                  setNewUser((prev) => ({
+                    ...prev,
+                    active: e.target.checked,
+                  }))
+                }
+              />
             </Form.Group>
             <Button variant="primary" type="submit">
               Create User
             </Button>
           </Form>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseCreateModal}>
-            Close
-          </Button>
-        </Modal.Footer>
+      </Modal>
+
+      {/* Modal for Editing User */}
+      <Modal
+        show={showEditModal}
+        onHide={handleCloseEditModal}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Edit User</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {editUser && (
+            <Form onSubmit={handleEditSubmit}>
+              <Form.Group className="mb-3">
+                <Form.Label>Name</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="name"
+                  value={editUser.name}
+                  onChange={handleEditInputChange}
+                  required
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Email</Form.Label>
+                <Form.Control
+                  type="email"
+                  name="email"
+                  value={editUser.email}
+                  onChange={handleEditInputChange}
+                  required
+                />
+              </Form.Group>
+              {/* Password field is hidden for editing */}
+              {/* <Form.Group className="mb-3">
+                <Form.Label>Password</Form.Label>
+                <Form.Control
+                  type="password"
+                  name="password"
+                  onChange={handleEditInputChange}
+                />
+              </Form.Group> */}
+              <Form.Group className="mb-3">
+                <Form.Label>Role</Form.Label>
+                <Form.Control
+                  as="select"
+                  name="role"
+                  value={editUser.role}
+                  onChange={handleEditInputChange}
+                  required
+                >
+                  {roles.map((role) => (
+                    <option
+                      key={role.id}
+                      value={role.id}
+                    >
+                      {role.name}
+                    </option>
+                  ))}
+                </Form.Control>
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Check
+                  type="checkbox"
+                  label="Active"
+                  checked={editUser.active}
+                  onChange={(e) =>
+                    setEditUser((prev) => ({
+                      ...prev,
+                      active: e.target.checked,
+                    }))
+                  }
+                />
+              </Form.Group>
+              <Button variant="primary" type="submit">
+                Update User
+              </Button>
+            </Form>
+          )}
+        </Modal.Body>
       </Modal>
     </div>
   );
