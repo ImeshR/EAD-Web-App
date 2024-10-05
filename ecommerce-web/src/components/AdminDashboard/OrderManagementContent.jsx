@@ -1,44 +1,34 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Row, Col, Table, Button, Badge, Form, Modal } from "react-bootstrap";
+import axios from "axios";
 
 const OrderManagementContent = () => {
-  const [orders, setOrders] = useState([
-    {
-      id: "12345-abcde",
-      customerId: "67890-fghij",
-      totalAmount: "$129.99",
-      status: "Processing",
-      createdAt: "2023-05-01",
-      details: {
-        items: [
-          { name: "Smartphone X", quantity: 1, price: "$599.99" },
-          { name: "Accessory Y", quantity: 2, price: "$19.99" },
-        ],
-        shippingAddress: "123 Main St, City, Country",
-        paymentMethod: "Credit Card",
-      },
-    },
-    {
-      id: "67890-fghij",
-      customerId: "12345-abcde",
-      totalAmount: "$79.99",
-      status: "Delivered",
-      createdAt: "2023-04-30",
-      details: {
-        items: [
-          { name: "T-Shirt", quantity: 1, price: "$19.99" },
-        ],
-        shippingAddress: "456 Another St, City, Country",
-        paymentMethod: "PayPal",
-      },
-    },
-  ]);
-
+  const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState("All");
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [currentOrder, setCurrentOrder] = useState(null);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("api/Order", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.data.message === "Successful") {
+          setOrders(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   const handleFilterChange = (e) => {
     setFilter(e.target.value);
@@ -64,13 +54,20 @@ const OrderManagementContent = () => {
     setCurrentOrder(null);
   };
 
-  const handleUpdateStatus = (newStatus) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === currentOrder.id ? { ...order, status: newStatus } : order
-      )
-    );
-    handleUpdateModalClose();
+  const handleUpdateStatus = async (newStatus) => {
+    try {
+      await axios.put(`https://172.28.23.129:7130/api/Order/${currentOrder.id}`, {
+        status: newStatus,
+      });
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order.id === currentOrder.id ? { ...order, status: newStatus } : order
+        )
+      );
+      handleUpdateModalClose();
+    } catch (error) {
+      console.error("Error updating order status:", error);
+    }
   };
 
   const filteredOrders = orders.filter((order) => {
@@ -88,6 +85,7 @@ const OrderManagementContent = () => {
               <Form.Label>Status</Form.Label>
               <Form.Control as="select" value={filter} onChange={handleFilterChange}>
                 <option>All</option>
+                <option>Pending</option>
                 <option>Processing</option>
                 <option>Shipped</option>
                 <option>Delivered</option>
@@ -115,11 +113,11 @@ const OrderManagementContent = () => {
               <td>{order.customerId}</td>
               <td>{order.totalAmount}</td>
               <td>
-                <Badge bg={order.status === "Processing" ? "info" : order.status === "Delivered" ? "success" : "danger"}>
+                <Badge bg={order.status === "Pending" ? "warning" : order.status === "Delivered" ? "success" : "info"}>
                   {order.status}
                 </Badge>
               </td>
-              <td>{order.createdAt}</td>
+              <td>{new Date(order.createdAt).toLocaleString()}</td>
               <td>
                 <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleDetailsModalShow(order)}>
                   View Details
@@ -148,6 +146,7 @@ const OrderManagementContent = () => {
             <Form.Group>
               <Form.Label>Select New Status</Form.Label>
               <Form.Control as="select" onChange={(e) => handleUpdateStatus(e.target.value)}>
+                <option>Pending</option>
                 <option>Processing</option>
                 <option>Shipped</option>
                 <option>Delivered</option>
@@ -171,18 +170,18 @@ const OrderManagementContent = () => {
         <Modal.Body>
           <h5>Order ID: {currentOrder?.id}</h5>
           <h6>Status: {currentOrder?.status}</h6>
-          <h6>Created At: {currentOrder?.createdAt}</h6>
+          <h6>Created At: {new Date(currentOrder?.createdAt).toLocaleString()}</h6>
           <h6>Total Amount: {currentOrder?.totalAmount}</h6>
           <h6>Customer ID: {currentOrder?.customerId}</h6>
-          <h6>Shipping Address: {currentOrder?.details.shippingAddress}</h6>
-          <h6>Payment Method: {currentOrder?.details.paymentMethod}</h6>
+          <h6>Shipping Address: {currentOrder?.details?.shippingAddress || "N/A"}</h6>
+          <h6>Payment Method: {currentOrder?.details?.paymentMethod || "N/A"}</h6>
           <h6>Items:</h6>
           <ul>
-            {currentOrder?.details.items.map((item, index) => (
+            {currentOrder?.details?.items?.map((item, index) => (
               <li key={index}>
                 {item.name} (Quantity: {item.quantity}, Price: {item.price})
               </li>
-            ))}
+            )) || <li>No items found.</li>}
           </ul>
         </Modal.Body>
         <Modal.Footer>
