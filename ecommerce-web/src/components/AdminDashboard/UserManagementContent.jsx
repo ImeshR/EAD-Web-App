@@ -2,31 +2,31 @@ import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Table, Button, Badge, Modal, Form } from "react-bootstrap";
 import axios from "axios";
+import { ObjectId } from "bson";  // Import ObjectId from bson
 
 const UserManagementContent = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [newUser, setNewUser] = useState({
-    id: "",
+    name: "",
     email: "",
     role: "",
-    status: "Active",
-    createdAt: new Date().toISOString().split("T")[0],
+    password: "",
   });
-  const [editUser, setEditUser] = useState(null); // State for editing a user
-  const [users, setUsers] = useState([]); // State for users
-  const [roles, setRoles] = useState([]); // State for roles
+  const [editUser, setEditUser] = useState(null); 
+  const [users, setUsers] = useState([]); 
+  const [roles, setRoles] = useState([]);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem("token"); // Get token from local storage
+        const token = localStorage.getItem("token"); 
         const response = await axios.get("api/User", {
           headers: {
-            Authorization: `Bearer ${token}`, // Use Bearer token for authentication
+            Authorization: `Bearer ${token}`, 
           },
         });
-        setUsers(response.data.data); // Set the users state with the fetched data
+        setUsers(response.data.data); 
       } catch (error) {
         console.error("Error fetching users:", error);
       }
@@ -34,13 +34,13 @@ const UserManagementContent = () => {
 
     const fetchRoles = async () => {
       try {
-        const token = localStorage.getItem("token"); // Get token from local storage
+        const token = localStorage.getItem("token"); 
         const response = await axios.get("api/MasterData/GetRoles", {
           headers: {
-            Authorization: `Bearer ${token}`, // Use Bearer token for authentication
+            Authorization: `Bearer ${token}`, 
           },
         });
-        setRoles(response.data); // Set the roles state with the fetched data
+        setRoles(response.data); 
       } catch (error) {
         console.error("Error fetching roles:", error);
       }
@@ -57,11 +57,10 @@ const UserManagementContent = () => {
   const handleCloseCreateModal = () => {
     setShowCreateModal(false);
     setNewUser({
-      id: "",
+      name: "",
       email: "",
       role: "",
-      status: "Active",
-      createdAt: new Date().toISOString().split("T")[0],
+      password: "",
     });
   };
 
@@ -86,19 +85,42 @@ const UserManagementContent = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add the new user to the users array
-    setUsers((prevUsers) => [...prevUsers, newUser]);
-    handleCloseCreateModal();
+    
+    // Generate a random 24-character hex string (ObjectId)
+    const id = new ObjectId().toHexString();
+
+    const userPayload = {
+      id: id,
+      name: newUser.name,
+      email: newUser.email,
+      password: newUser.password,
+      phoneNumber: "", // Empty string
+      address: "",     // Empty string
+      role: newUser.role,
+      active: true,
+    };
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post("api/User/register", userPayload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setUsers((prevUsers) => [...prevUsers, userPayload]); // Add new user to the list
+      handleCloseCreateModal();
+    } catch (error) {
+      console.error("Error creating user:", error);
+    }
   };
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
     setUsers((prevUsers) =>
-      prevUsers.map((user) =>
-        user.id === editUser.id ? editUser : user
-      )
+      prevUsers.map((user) => (user.id === editUser.id ? editUser : user))
     );
     handleCloseEditModal();
   };
@@ -108,10 +130,9 @@ const UserManagementContent = () => {
     setShowEditModal(true);
   };
 
-  // Function to get the role name by ID
   const getRoleName = (roleId) => {
     const role = roles.find((r) => r.id === roleId);
-    return role ? role.name : "Unknown Role"; // Fallback if role not found
+    return role ? role.name : "Unknown Role";
   };
 
   return (
@@ -136,9 +157,12 @@ const UserManagementContent = () => {
             <tr key={user.id}>
               <td>{user.id}</td>
               <td>{user.email}</td>
-              <td>{getRoleName(user.role)}</td> {/* Display role name instead of ID */}
+              <td>{getRoleName(user.role)}</td> 
               <td>
-                <Badge bg={user.active ? "success" : "warning"} text={user.active ? "white" : "dark"}>
+                <Badge
+                  bg={user.active ? "success" : "warning"}
+                  text={user.active ? "white" : "dark"}
+                >
                   {user.active ? "Active" : "Inactive"}
                 </Badge>
               </td>
@@ -175,11 +199,11 @@ const UserManagementContent = () => {
         <Modal.Body>
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3">
-              <Form.Label>User ID</Form.Label>
+              <Form.Label>User Name</Form.Label>
               <Form.Control
                 type="text"
-                name="id"
-                value={newUser.id}
+                name="name"
+                value={newUser.name}
                 onChange={handleInputChange}
                 required
               />
@@ -190,6 +214,16 @@ const UserManagementContent = () => {
                 type="email"
                 name="email"
                 value={newUser.email}
+                onChange={handleInputChange}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Password</Form.Label>
+              <Form.Control
+                type="password"
+                name="password"
+                value={newUser.password}
                 onChange={handleInputChange}
                 required
               />
@@ -218,61 +252,6 @@ const UserManagementContent = () => {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseCreateModal}>
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Modal for Editing User */}
-      <Modal show={showEditModal} onHide={handleCloseEditModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit User</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form onSubmit={handleEditSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>User ID</Form.Label>
-              <Form.Control
-                type="text"
-                name="id"
-                value={editUser?.id || ""}
-                readOnly
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                name="email"
-                value={editUser?.email || ""}
-                onChange={handleEditInputChange}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Role</Form.Label>
-              <Form.Control
-                as="select"
-                name="role"
-                value={editUser?.role || ""}
-                onChange={handleEditInputChange}
-                required
-              >
-                <option value="">Select Role</option>
-                {roles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
-                  </option>
-                ))}
-              </Form.Control>
-            </Form.Group>
-            <Button variant="primary" type="submit">
-              Update User
-            </Button>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseEditModal}>
             Close
           </Button>
         </Modal.Footer>
