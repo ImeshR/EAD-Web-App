@@ -15,12 +15,13 @@ const UserManagementContent = () => {
   });
   const [editUser, setEditUser] = useState(null); // State for editing a user
   const [users, setUsers] = useState([]); // State for users
+  const [roles, setRoles] = useState([]); // State for roles
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem("token"); // Get token from local storage
-        const response = await axios.get("/api/User", {
+        const response = await axios.get("api/User", {
           headers: {
             Authorization: `Bearer ${token}`, // Use Bearer token for authentication
           },
@@ -31,7 +32,22 @@ const UserManagementContent = () => {
       }
     };
 
+    const fetchRoles = async () => {
+      try {
+        const token = localStorage.getItem("token"); // Get token from local storage
+        const response = await axios.get("api/MasterData/GetRoles", {
+          headers: {
+            Authorization: `Bearer ${token}`, // Use Bearer token for authentication
+          },
+        });
+        setRoles(response.data); // Set the roles state with the fetched data
+      } catch (error) {
+        console.error("Error fetching roles:", error);
+      }
+    };
+
     fetchUsers();
+    fetchRoles();
   }, []);
 
   const handleCreateUser = () => {
@@ -92,6 +108,12 @@ const UserManagementContent = () => {
     setShowEditModal(true);
   };
 
+  // Function to get the role name by ID
+  const getRoleName = (roleId) => {
+    const role = roles.find((r) => r.id === roleId);
+    return role ? role.name : "Unknown Role"; // Fallback if role not found
+  };
+
   return (
     <div>
       <h2 className="mt-4">Manage Users</h2>
@@ -105,6 +127,7 @@ const UserManagementContent = () => {
             <th>Email</th>
             <th>Role</th>
             <th>Status</th>
+            <th>Created At</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -113,12 +136,13 @@ const UserManagementContent = () => {
             <tr key={user.id}>
               <td>{user.id}</td>
               <td>{user.email}</td>
-              <td>{user.role}</td>
+              <td>{getRoleName(user.role)}</td> {/* Display role name instead of ID */}
               <td>
                 <Badge bg={user.active ? "success" : "warning"} text={user.active ? "white" : "dark"}>
                   {user.active ? "Active" : "Inactive"}
                 </Badge>
               </td>
+              <td>{user.createdAt || "N/A"}</td>
               <td>
                 <Button
                   variant="outline-primary"
@@ -173,12 +197,19 @@ const UserManagementContent = () => {
             <Form.Group className="mb-3">
               <Form.Label>Role</Form.Label>
               <Form.Control
-                type="text"
+                as="select"
                 name="role"
                 value={newUser.role}
                 onChange={handleInputChange}
                 required
-              />
+              >
+                <option value="">Select Role</option>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
+              </Form.Control>
             </Form.Group>
             <Button variant="primary" type="submit">
               Create User
@@ -221,12 +252,19 @@ const UserManagementContent = () => {
             <Form.Group className="mb-3">
               <Form.Label>Role</Form.Label>
               <Form.Control
-                type="text"
+                as="select"
                 name="role"
                 value={editUser?.role || ""}
                 onChange={handleEditInputChange}
                 required
-              />
+              >
+                <option value="">Select Role</option>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
+              </Form.Control>
             </Form.Group>
             <Button variant="primary" type="submit">
               Update User
