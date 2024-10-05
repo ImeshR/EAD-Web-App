@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Table, Button, Badge, Modal, Form } from "react-bootstrap";
+import axios from "axios";
 
 const UserManagementContent = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -13,23 +14,25 @@ const UserManagementContent = () => {
     createdAt: new Date().toISOString().split("T")[0],
   });
   const [editUser, setEditUser] = useState(null); // State for editing a user
+  const [users, setUsers] = useState([]); // State for users
 
-  const [users, setUsers] = useState([
-    {
-      id: "12345-abcde",
-      email: "john@example.com",
-      role: "Administrator",
-      status: "Active",
-      createdAt: "2023-05-01",
-    },
-    {
-      id: "67890-fghij",
-      email: "jane@example.com",
-      role: "Vendor",
-      status: "Pending",
-      createdAt: "2023-05-02",
-    },
-  ]);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("token"); // Get token from local storage
+        const response = await axios.get("/api/User", {
+          headers: {
+            Authorization: `Bearer ${token}`, // Use Bearer token for authentication
+          },
+        });
+        setUsers(response.data.data); // Set the users state with the fetched data
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const handleCreateUser = () => {
     setShowCreateModal(true);
@@ -102,7 +105,6 @@ const UserManagementContent = () => {
             <th>Email</th>
             <th>Role</th>
             <th>Status</th>
-            <th>Created At</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -113,11 +115,10 @@ const UserManagementContent = () => {
               <td>{user.email}</td>
               <td>{user.role}</td>
               <td>
-                <Badge bg={user.status === "Active" ? "success" : "warning"} text={user.status === "Pending" ? "dark" : "white"}>
-                  {user.status}
+                <Badge bg={user.active ? "success" : "warning"} text={user.active ? "white" : "dark"}>
+                  {user.active ? "Active" : "Inactive"}
                 </Badge>
               </td>
-              <td>{user.createdAt}</td>
               <td>
                 <Button
                   variant="outline-primary"
@@ -127,7 +128,7 @@ const UserManagementContent = () => {
                 >
                   Edit
                 </Button>
-                {user.status === "Active" ? (
+                {user.active ? (
                   <Button variant="outline-danger" size="sm">
                     Deactivate
                   </Button>
