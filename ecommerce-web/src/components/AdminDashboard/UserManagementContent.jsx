@@ -17,20 +17,20 @@ const UserManagementContent = () => {
     address: "",
     active: true,
   });
-  const [editUser, setEditUser] = useState(null); // State for editing a user
-  const [users, setUsers] = useState([]); // State for users
-  const [roles, setRoles] = useState([]); // State for roles
+  const [editUser, setEditUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem("token"); // Get token from local storage
+        const token = localStorage.getItem("token");
         const response = await axios.get("api/User", {
           headers: {
-            Authorization: `Bearer ${token}`, // Use Bearer token for authentication
+            Authorization: `Bearer ${token}`,
           },
         });
-        setUsers(response.data.data); // Set the users state with the fetched data
+        setUsers(response.data.data);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
@@ -38,13 +38,13 @@ const UserManagementContent = () => {
 
     const fetchRoles = async () => {
       try {
-        const token = localStorage.getItem("token"); // Get token from local storage
+        const token = localStorage.getItem("token");
         const response = await axios.get("api/MasterData/GetRoles", {
           headers: {
-            Authorization: `Bearer ${token}`, // Use Bearer token for authentication
+            Authorization: `Bearer ${token}`,
           },
         });
-        setRoles(response.data); // Set the roles state with the fetched data
+        setRoles(response.data);
       } catch (error) {
         console.error("Error fetching roles:", error);
       }
@@ -160,7 +160,9 @@ const UserManagementContent = () => {
       });
 
       setUsers((prevUsers) =>
-        prevUsers.map((user) => (user.id === editUser.id ? { ...user, ...userPayload } : user))
+        prevUsers.map((user) =>
+          user.id === editUser.id ? { ...user, ...userPayload } : user
+        )
       );
       handleCloseEditModal();
       Swal.fire({
@@ -189,6 +191,47 @@ const UserManagementContent = () => {
   const getRoleName = (roleId) => {
     const role = roles.find((r) => r.id === roleId);
     return role ? role.name : "Unknown Role"; // Fallback if role not found
+  };
+
+  const handleToggleActiveStatus = async (user) => {
+    const updatedActiveStatus = !user.active; // Toggle active status
+
+    const userPayload = {
+      ...user,
+      active: updatedActiveStatus,
+    };
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(`api/User/${user.id}`, userPayload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === user.id ? { ...u, active: updatedActiveStatus } : u
+        )
+      );
+
+      Swal.fire({
+        title: "Success!",
+        text: updatedActiveStatus
+          ? "User activated successfully."
+          : "User deactivated successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+      });
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "There was an error updating the user status.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
   };
 
   return (
@@ -240,21 +283,13 @@ const UserManagementContent = () => {
                 >
                   Edit
                 </Button>
-                {user.active ? (
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                  >
-                    Deactivate
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline-success"
-                    size="sm"
-                  >
-                    Approve
-                  </Button>
-                )}
+                {/* <Button
+                  variant={user.active ? "outline-danger" : "outline-success"}
+                  size="sm"
+                  onClick={() => handleToggleActiveStatus(user)}
+                >
+                  {user.active ? "Deactivate" : "Approve"}
+                </Button> */}
               </td>
             </tr>
           ))}
@@ -352,7 +387,10 @@ const UserManagementContent = () => {
                 }
               />
             </Form.Group>
-            <Button variant="primary" type="submit">
+            <Button
+              variant="primary"
+              type="submit"
+            >
               Create User
             </Button>
           </Form>
@@ -431,7 +469,10 @@ const UserManagementContent = () => {
                   }
                 />
               </Form.Group>
-              <Button variant="primary" type="submit">
+              <Button
+                variant="primary"
+                type="submit"
+              >
                 Update User
               </Button>
             </Form>

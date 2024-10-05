@@ -20,7 +20,7 @@ const DashboardContent = () => {
       })
       .then((response) => {
         const users = response.data.data;
-        setUserCount(users.length); // Set the user count
+        setUserCount(users.length); 
       })
       .catch((error) => {
         console.error("Error fetching user data:", error);
