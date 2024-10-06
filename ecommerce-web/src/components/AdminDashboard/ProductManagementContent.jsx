@@ -1,90 +1,105 @@
-import React, { useEffect, useState } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import { Row, Col, Table, Button, Badge, Form, Modal, Spinner } from "react-bootstrap";
-import axios from "axios"; // Importing axios
-import Swal from 'sweetalert2'; // Import SweetAlert2 for notifications
-
-const generateHexId = () => {
-    return [...Array(24)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-};
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Button, Modal, Form, Table } from 'react-bootstrap';
+import Swal from 'sweetalert2';
 
 const VendorManagementContent = () => {
+    const [categories, setCategories] = useState([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [newProduct, setNewProduct] = useState({
-        id: "",
-        name: "",
-        description: "", // Added description
-        vendorId: "",
-        category: "",
-        price: "",
-        stockCount: 0, // Changed to 0 as per your model
-        active: true, // Ensure the key matches your API
+        name: '',
+        description: '',
+        vendorId: '',
+        categoryId: '', // This will hold the selected category ID
+        price: 0,
+        stockCount: 0,
+        active: true,
     });
     const [editProduct, setEditProduct] = useState(null);
-
-    // State for Filters
-    const [vendorFilter, setVendorFilter] = useState("All Vendors");
-    const [categoryFilter, setCategoryFilter] = useState("All Categories");
-    const [statusFilter, setStatusFilter] = useState("All");
-    const [stockLevelFilter, setStockLevelFilter] = useState("All");
-
-    // Unique values for filters
-    const [uniqueVendors, setUniqueVendors] = useState([]);
-    const [uniqueCategories, setUniqueCategories] = useState([]);
-
-    // Pagination State
-    const [currentPage, setCurrentPage] = useState(1);
-    const [productsPerPage] = useState(5); // Number of products per page
+    const [products, setProducts] = useState([]);
 
     useEffect(() => {
-        const fetchProducts = async () => {
-            const token = localStorage.getItem("token");
-            try {
-                const response = await axios.get("api/Product", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-
-                if (response.data.message === "Successful") {
-                    setProducts(response.data.data); // Set products from the API
-
-                    // Set unique vendors and categories for filters
-                    const vendors = Array.from(new Set(response.data.data.map(product => product.vendorId)));
-                    const categories = Array.from(new Set(response.data.data.map(product => product.category)));
-
-                    setUniqueVendors(["All Vendors", ...vendors]); // Include "All Vendors"
-                    setUniqueCategories(["All Categories", ...categories]); // Include "All Categories"
-                }
-            } catch (error) {
-                console.error("Error fetching products:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
+        fetchCategories();
         fetchProducts();
     }, []);
 
-    const handleCreateProduct = () => {
-        setShowCreateModal(true);
+    const fetchCategories = async () => {
+        try {
+            const response = await axios.get('api/Category',
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    },
+                }
+            );
+            setCategories(response.data.data); // Adjust based on your response structure
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        }
+    };
+
+    const fetchProducts = async () => {
+        try {
+            const response = await axios.get('api/Product',
+                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            ); // Adjust the endpoint accordingly
+            setProducts(response.data.data); // Adjust based on your response structure
+        } catch (error) {
+            console.error('Error fetching products:', error);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setNewProduct((prev) => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value,
+        }));
+    };
+
+    const handleCreateSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post('api/Product/create', newProduct ,
+                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            ); // Adjust the endpoint accordingly
+            Swal.fire('Success', 'Product created successfully!', 'success');
+            setShowCreateModal(false);
+            fetchProducts(); // Refresh product list
+        } catch (error) {
+            console.error('Error creating product:', error);
+            Swal.fire('Error', 'There was an error creating the product.', 'error');
+        }
     };
 
     const handleCloseCreateModal = () => {
         setShowCreateModal(false);
         setNewProduct({
-            id: "",
-            name: "",
-            description: "", // Reset description
-            vendorId: "",
-            category: "",
-            price: "",
-            stockCount: 0, // Reset stockCount to 0
+            name: '',
+            description: '',
+            vendorId: '',
+            categoryId: '',
+            price: 0,
+            stockCount: 0,
             active: true,
         });
+    };
+
+    // Handle edit functionality
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.put(`api/Product/update/${editProduct.id}`, editProduct ,
+                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            ); // Adjust the endpoint accordingly
+            Swal.fire('Success', 'Product updated successfully!', 'success');
+            setShowEditModal(false);
+            fetchProducts(); // Refresh product list
+        } catch (error) {
+            console.error('Error updating product:', error);
+            Swal.fire('Error', 'There was an error updating the product.', 'error');
+        }
     };
 
     const handleCloseEditModal = () => {
@@ -92,27 +107,11 @@ const VendorManagementContent = () => {
         setEditProduct(null);
     };
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setNewProduct((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
-    };
-
     const handleEditInputChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setEditProduct((prev) => ({
             ...prev,
-            [name]: value,
-        }));
-    };
-
-    // Handle toggle for active status
-    const handleToggleActive = () => {
-        setNewProduct((prev) => ({
-            ...prev,
-            active: !prev.active,
+            [name]: type === 'checkbox' ? checked : value,
         }));
     };
 
@@ -123,275 +122,74 @@ const VendorManagementContent = () => {
         }));
     };
 
-    const handleCreateSubmit = async (e) => {
-        e.preventDefault();
-
-        const token = localStorage.getItem("token");
-
-        const productWithId = {
-            ...newProduct,
-            id: generateHexId(), // Generate ID
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-
-        try {
-            const response = await axios.post("api/Product/create", productWithId, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (response.data.message === "Create successful") {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Product Created',
-                    text: 'The product has been created successfully!',
-                });
-                setProducts((prevProducts) => [...prevProducts, response.data.data]);
-                handleCloseCreateModal();
-            } else {
-                throw new Error(response.data.message);
-            }
-        } catch (error) {
-            console.error("Error creating product:", error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'There was an error creating the product.',
-            });
-        }
+    const handleToggleActive = () => {
+        setNewProduct((prev) => ({
+            ...prev,
+            active: !prev.active,
+        }));
     };
 
-    const handleEditSubmit = async (e) => {
-        e.preventDefault();
-        const token = localStorage.getItem("token");
-
-        const updatedProduct = {
-            name: editProduct.name,
-            description: editProduct.description,
-            category: editProduct.category,
-            price: editProduct.price,
-            images: [], // Assuming you want to send an array of images; fill this as needed
-            active: editProduct.active,
-            stockCount: editProduct.stockCount,
-        };
-
-        try {
-            const response = await axios.put(`api/Product/update/${editProduct.id}`, updatedProduct, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (response.data.message === "Update successful") {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Product Updated',
-                    text: 'The product has been updated successfully!',
-                });
-                setProducts((prevProducts) =>
-                    prevProducts.map((product) =>
-                        product.id === editProduct.id ? { ...product, ...updatedProduct } : product
-                    )
-                );
-                handleCloseEditModal();
-            } else {
-                throw new Error(response.data.message);
-            }
-        } catch (error) {
-            console.error("Error updating product:", error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'There was an error updating the product.',
-            });
-        }
-    };
-
-    const handleEditProduct = (product) => {
-        setEditProduct(product);
-        setShowEditModal(true);
-    };
-
-    // Handle Delete Product
-    const handleDeleteProduct = (productId) => {
-        Swal.fire({
+    const handleDeleteProduct = async (id) => {
+        const result = await Swal.fire({
             title: 'Are you sure?',
             text: "You won't be able to revert this!",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!'
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                const token = localStorage.getItem("token");
-                try {
-                    const response = await axios.delete(`api/Product/delete/${productId}`, {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    });
-
-                    if (response.data.message === "Delete successful") {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Deleted!',
-                            text: 'The product has been deleted.',
-                        });
-                        setProducts((prevProducts) =>
-                            prevProducts.filter((product) => product.id !== productId)
-                        );
-                    } else {
-                        throw new Error(response.data.message);
-                    }
-                } catch (error) {
-                    console.error("Error deleting product:", error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'There was an error deleting the product.',
-                    });
-                }
-            }
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
         });
+
+        if (result.isConfirmed) {
+            try {
+                await axios.delete(`api/Product/delete/${id}`); // Adjust the endpoint accordingly
+                Swal.fire('Deleted!', 'Your product has been deleted.', 'success');
+                fetchProducts(); // Refresh product list
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                Swal.fire('Error', 'There was an error deleting the product.', 'error');
+            }
+        }
     };
-
-    // Filter Products based on criteria
-    const filteredProducts = products.filter((product) => {
-        const matchesVendor = vendorFilter === "All Vendors" || product.vendorId === vendorFilter;
-        const matchesCategory = categoryFilter === "All Categories" || product.category === categoryFilter;
-        const matchesStatus =
-            statusFilter === "All" ||
-            (statusFilter === "Active" && product.active) ||
-            (statusFilter === "Inactive" && !product.active);
-        const matchesStockLevel =
-            stockLevelFilter === "All" ||
-            (stockLevelFilter === "In Stock" && product.stockCount > 0) ||
-            (stockLevelFilter === "Low Stock" && product.stockCount > 0 && product.stockCount <= 5) ||
-            (stockLevelFilter === "Out of Stock" && product.stockCount === 0);
-
-        return matchesVendor && matchesCategory && matchesStatus && matchesStockLevel;
-    });
-
-    // Pagination Logic
-    const indexOfLastProduct = currentPage * productsPerPage;
-    const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-    const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
-    const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
     return (
         <div>
-            {loading ? (
-                <Spinner animation="border" />
-            ) : (
-                <>
-                    <Button variant="primary" onClick={handleCreateProduct}>
-                        Create Product
-                    </Button>
-                    <Form>
-                        <Row className="mb-3">
-                            <Col md={3}>
-                                <Form.Group>
-                                    <Form.Label>Vendor</Form.Label>
-                                    <Form.Control as="select" value={vendorFilter} onChange={(e) => setVendorFilter(e.target.value)}>
-                                        {uniqueVendors.map((vendor, index) => (
-                                            <option key={index} value={vendor}>{vendor}</option>
-                                        ))}
-                                    </Form.Control>
-                                </Form.Group>
-                            </Col>
-                            <Col md={3}>
-                                <Form.Group>
-                                    <Form.Label>Category</Form.Label>
-                                    <Form.Control as="select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-                                        {uniqueCategories.map((category, index) => (
-                                            <option key={index} value={category}>{category}</option>
-                                        ))}
-                                    </Form.Control>
-                                </Form.Group>
-                            </Col>
-                            <Col md={3}>
-                                <Form.Group>
-                                    <Form.Label>Status</Form.Label>
-                                    <Form.Control as="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                                        <option value="All">All</option>
-                                        <option value="Active">Active</option>
-                                        <option value="Inactive">Inactive</option>
-                                    </Form.Control>
-                                </Form.Group>
-                            </Col>
-                            <Col md={3}>
-                                <Form.Group>
-                                    <Form.Label>Stock Level</Form.Label>
-                                    <Form.Control as="select" value={stockLevelFilter} onChange={(e) => setStockLevelFilter(e.target.value)}>
-                                        <option value="All">All</option>
-                                        <option value="In Stock">In Stock</option>
-                                        <option value="Low Stock">Low Stock</option>
-                                        <option value="Out of Stock">Out of Stock</option>
-                                    </Form.Control>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                    </Form>
+            <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+                Create New Product
+            </Button>
 
-                    <Table striped bordered hover>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th>Vendor ID</th>
-                                <th>Category</th>
-                                <th>Price</th>
-                                <th>Stock Count</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {currentProducts.map((product) => (
-                                <tr key={product.id}>
-                                    <td>{product.name}</td>
-                                    <td>{product.description}</td>
-                                    <td>{product.vendorId}</td>
-                                    <td>{product.category}</td>
-                                    <td>{product.price}</td>
-                                    <td>{product.stockCount}</td>
-                                    <td>
-                                        <Badge pill bg={product.active ? "success" : "danger"}>
-                                            {product.active ? "Active" : "Inactive"}
-                                        </Badge>
-                                    </td>
-                                    <td>
-                                        <Button variant="info" onClick={() => handleEditProduct(product)}>
-                                            Edit
-                                        </Button>
-                                        <Button variant="danger" onClick={() => handleDeleteProduct(product.id)} className="ms-2">
-                                            Delete
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-
-                    {/* Pagination Controls */}
-                    <nav>
-                        <ul className="pagination">
-                            {[...Array(totalPages)].map((_, index) => (
-                                <li className={`page-item ${currentPage === index + 1 ? 'active' : ''}`} key={index}>
-                                    <Button className="page-link" onClick={() => paginate(index + 1)}>
-                                        {index + 1}
-                                    </Button>
-                                </li>
-                            ))}
-                        </ul>
-                    </nav>
-                </>
-            )}
+            <Table striped bordered hover>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Vendor ID</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock Count</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {products.map((product) => (
+                        <tr key={product.id}>
+                            <td>{product.name}</td>
+                            <td>{product.description}</td>
+                            <td>{product.vendorId}</td>
+                            <td>{categories.find(cat => cat.categoryId === product.categoryId)?.name || 'N/A'}</td>
+                            <td>{product.price}</td>
+                            <td>{product.stockCount}</td>
+                            <td>{product.active ? 'Yes' : 'No'}</td>
+                            <td>
+                                <Button onClick={() => {
+                                    setEditProduct(product);
+                                    setShowEditModal(true);
+                                }}>Edit</Button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </Table>
 
             {/* Create Product Modal */}
             <Modal show={showCreateModal} onHide={handleCloseCreateModal}>
@@ -432,13 +230,19 @@ const VendorManagementContent = () => {
                         </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label>Category</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="category"
-                                value={newProduct.category}
+                            <Form.Select
+                                name="categoryId"
+                                value={newProduct.categoryId}
                                 onChange={handleInputChange}
                                 required
-                            />
+                            >
+                                <option value="">Select a category</option>
+                                {categories.map((category) => (
+                                    <option key={category.id} value={category.categoryId}>
+                                        {category.name}
+                                    </option>
+                                ))}
+                            </Form.Select>
                         </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label>Price</Form.Label>
@@ -514,13 +318,18 @@ const VendorManagementContent = () => {
                         </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label>Category</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="category"
-                                value={editProduct?.category}
+                            <Form.Select
+                                name="categoryId"
+                                value={editProduct?.categoryId}
                                 onChange={handleEditInputChange}
                                 required
-                            />
+                            >
+                                {categories.map((category) => (
+                                    <option key={category.id} value={category.categoryId}>
+                                        {category.name}
+                                    </option>
+                                ))}
+                            </Form.Select>
                         </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label>Price</Form.Label>

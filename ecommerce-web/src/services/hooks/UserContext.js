@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import {jwtDecode} from 'jwt-decode'; 
+import { jwtDecode } from 'jwt-decode'; 
 
 const UserContext = createContext({
   user: null,
@@ -17,16 +17,25 @@ const UserProvider = ({ children }) => {
     const token = localStorage.getItem('token');
 
     if (token) {
-      const decoded = jwtDecode(token);
+      try {
+        const decoded = jwtDecode(token);
+        
+        // Validate if the required claims exist
+        const userData = {
+          id: decoded.UserId || null,
+          email: decoded.Email || null,
+          role: decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || null,
+        };
 
-      const userData = {
-        id: decoded.UserId,
-        email: decoded.Email,
-        role: decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
-      };
-
-     
-      setUser(userData);
+        // Set user data only if we have a valid user object
+        if (userData.id && userData.email && userData.role) {
+          setUser(userData);
+        } else {
+          console.error("Token is missing necessary claims.");
+        }
+      } catch (error) {
+        console.error('Failed to decode token', error);
+      }
     }
   }, []);
 

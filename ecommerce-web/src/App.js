@@ -7,10 +7,12 @@ import MyProfile from "./pages/MyProfile/page";
 import Notifications from "./pages/Notifications/page";
 import Reports from "./pages/Reports/page";
 import VendorDashboard from "./pages/VendorDashboard/page";
+import { UserProvider } from "./services/hooks/UserContext";
 
 
 function App() {
   return (
+    <UserProvider>
     <div>
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -22,6 +24,7 @@ function App() {
         <Route path="/vendor-dashboard" element={<VendorDashboard/>} />
       </Routes>
     </div>
+    </UserProvider>
   );
 }
 

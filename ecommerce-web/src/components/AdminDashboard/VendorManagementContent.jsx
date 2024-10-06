@@ -1,35 +1,63 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Table, Button, Badge, Modal, Form } from "react-bootstrap";
+import { Table, Button, Badge, Modal, Form, Spinner } from "react-bootstrap";
+import axios from "axios";
+import Swal from "sweetalert2";
+import generateHexId from "../../services/randomId";
 
 const VendorManagementContent = () => {
+  const [vendors, setVendors] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [newVendor, setNewVendor] = useState({
     id: "",
-    name: "",
-    averageRating: "",
-    totalProducts: "",
-    status: "Active",
+    vendorId: "",
+    userId: "",
+    vendorName: "",
+    averageRanking: 0,
+    comments: [],
   });
+  const [users, setUsers] = useState([]);
 
-  const vendors = [
-    {
-      id: "12345-abcde",
-      name: "Acme Inc.",
-      averageRating: "4.5 / 5",
-      totalProducts: 23,
-      status: "Active",
-    },
-    {
-      id: "67890-fghij",
-      name: "XYZ Corp",
-      averageRating: "3.8 / 5",
-      totalProducts: 12,
-      status: "Inactive",
-    },
-  ];
+  // Fetch vendors and users from the API
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        const response = await axios.get("api/Vendor", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setVendors(response.data.data);
+      } catch (error) {
+        console.error("Error fetching vendors", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get("api/User", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        const vendorRoleId = "66e9782f59553323609b4f1b";
+        const vendorUsers = response.data.data.filter(
+          (user) => user.role === vendorRoleId
+        );
+        setUsers(vendorUsers);
+      } catch (error) {
+        console.error("Error fetching users", error);
+      }
+    };
+
+    fetchVendors();
+    fetchUsers();
+  }, []);
 
   const handleViewDetails = (vendor) => {
     setSelectedVendor(vendor);
@@ -49,10 +77,11 @@ const VendorManagementContent = () => {
     setShowCreateModal(false);
     setNewVendor({
       id: "",
-      name: "",
-      averageRating: "",
-      totalProducts: "",
-      status: "Active",
+      vendorId: "",
+      userId: "",
+      vendorName: "",
+      averageRanking: 0,
+      comments: [],
     });
   };
 
@@ -64,11 +93,69 @@ const VendorManagementContent = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleUserSelect = (e) => {
+    const selectedUser = users.find((user) => user.id === e.target.value);
+    if (selectedUser) {
+      setNewVendor((prev) => ({
+        ...prev,
+        userId: selectedUser.id,
+        vendorName: selectedUser.name,
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add the new vendor to the vendors array
-    vendors.push(newVendor);
-    handleCloseCreateModal();
+
+    const vendorId = generateHexId();
+
+    const vendorData = {
+      ...newVendor,
+      vendorId,
+      comments: [],
+    };
+
+    try {
+      await axios.post("api/Vendor/create", vendorData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+      });
+      Swal.fire("Success", "Vendor created successfully!", "success");
+      setVendors((prev) => [...prev, vendorData]);
+      handleCloseCreateModal();
+    } catch (error) {
+      console.error("Error creating vendor", error);
+      Swal.fire("Error", "Failed to create vendor.", "error");
+    }
+  };
+
+  const handleDeleteVendor = async (vendorId) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`api/Vendor/delete/${vendorId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setVendors((prev) => prev.filter((vendor) => vendor.id !== vendorId));
+        Swal.fire('Deleted!', 'Vendor has been deleted.', 'success');
+      } catch (error) {
+        console.error("Error deleting vendor", error);
+        Swal.fire('Error', 'Failed to delete vendor.', 'error');
+      }
+    }
   };
 
   return (
@@ -77,52 +164,57 @@ const VendorManagementContent = () => {
       <Button variant="primary" className="mb-3" onClick={handleCreateVendor}>
         Create Vendor Account
       </Button>
-      <Table striped bordered hover>
-        <thead>
-          <tr>
-            <th>Vendor ID</th>
-            <th>Vendor Name</th>
-            <th>Average Rating</th>
-            <th>Total Products</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {vendors.map((vendor) => (
-            <tr key={vendor.id}>
-              <td>{vendor.id}</td>
-              <td>{vendor.name}</td>
-              <td>{vendor.averageRating}</td>
-              <td>{vendor.totalProducts}</td>
-              <td>
-                <Badge bg={vendor.status === "Active" ? "success" : "danger"}>
-                  {vendor.status}
-                </Badge>
-              </td>
-              <td>
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  className="me-2"
-                  onClick={() => handleViewDetails(vendor)}
-                >
-                  View Details
-                </Button>
-                {vendor.status === "Active" ? (
-                  <Button variant="outline-danger" size="sm">
-                    Deactivate
-                  </Button>
-                ) : (
-                  <Button variant="outline-success" size="sm">
-                    Reactivate
-                  </Button>
-                )}
-              </td>
+
+      {loading ? (
+        <div className="d-flex justify-content-center">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+        </div>
+      ) : (
+        <Table striped bordered hover>
+          <thead>
+            <tr>
+              <th>Vendor ID</th>
+              <th>Vendor Name</th>
+              <th>Average Rating</th>
+              <th>Comments</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {vendors.map((vendor) => (
+              <tr key={vendor.id}>
+                <td>{vendor.id}</td>
+                <td>{vendor.vendorName}</td>
+                <td>{vendor.averageRanking} / 5</td>
+                <td>{vendor.comments.length} Comments</td>
+                <td>
+                  <Badge bg="success">Active</Badge>
+                </td>
+                <td>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    className="me-2"
+                    onClick={() => handleViewDetails(vendor)}
+                  >
+                    View Details
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => handleDeleteVendor(vendor.id)}
+                  >
+                    Delete
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
 
       {/* Modal for Vendor Details */}
       <Modal show={showModal} onHide={handleCloseModal}>
@@ -132,11 +224,19 @@ const VendorManagementContent = () => {
         <Modal.Body>
           {selectedVendor && (
             <div>
-              <p><strong>Vendor ID:</strong> {selectedVendor.id}</p>
-              <p><strong>Vendor Name:</strong> {selectedVendor.name}</p>
-              <p><strong>Average Rating:</strong> {selectedVendor.averageRating}</p>
-              <p><strong>Total Products:</strong> {selectedVendor.totalProducts}</p>
-              <p><strong>Status:</strong> {selectedVendor.status}</p>
+              <p>
+                <strong>Vendor ID:</strong> {selectedVendor.id}
+              </p>
+              <p>
+                <strong>Vendor Name:</strong> {selectedVendor.vendorName}
+              </p>
+              <p>
+                <strong>Average Rating:</strong> {selectedVendor.averageRanking}
+              </p>
+              <p>
+                <strong>Comments:</strong> {selectedVendor.comments.length}{" "}
+                Comments
+              </p>
             </div>
           )}
         </Modal.Body>
@@ -155,21 +255,26 @@ const VendorManagementContent = () => {
         <Modal.Body>
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3">
-              <Form.Label>Vendor ID</Form.Label>
-              <Form.Control
-                type="text"
-                name="id"
-                value={newVendor.id}
-                onChange={handleInputChange}
+              <Form.Label>User (Select Vendor)</Form.Label>
+              <Form.Select
+                name="userId"
+                onChange={handleUserSelect}
                 required
-              />
+              >
+                <option value="">Select a user</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name}
+                  </option>
+                ))}
+              </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Vendor Name</Form.Label>
               <Form.Control
                 type="text"
-                name="name"
-                value={newVendor.name}
+                name="vendorName"
+                value={newVendor.vendorName}
                 onChange={handleInputChange}
                 required
               />
@@ -177,18 +282,9 @@ const VendorManagementContent = () => {
             <Form.Group className="mb-3">
               <Form.Label>Average Rating</Form.Label>
               <Form.Control
-                type="text"
-                name="averageRating"
-                value={newVendor.averageRating}
-                onChange={handleInputChange}
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Total Products</Form.Label>
-              <Form.Control
                 type="number"
-                name="totalProducts"
-                value={newVendor.totalProducts}
+                name="averageRanking"
+                value={newVendor.averageRanking}
                 onChange={handleInputChange}
                 required
               />

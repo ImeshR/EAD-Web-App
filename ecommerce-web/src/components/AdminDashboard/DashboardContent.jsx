@@ -5,9 +5,10 @@ import { Row, Col, Card, Button } from "react-bootstrap";
 import { Package, ShoppingCart, Users, Briefcase } from "react-feather";
 
 const DashboardContent = () => {
-  const [userCount, setUserCount] = useState(0); // State to store the user count
-  const [productCount, setProductCount] = useState(0); // State to store the product count
-  const [orderCount, setOrderCount] = useState(0); // State to store the order count
+  const [userCount, setUserCount] = useState(0); 
+  const [productCount, setProductCount] = useState(0); 
+  const [orderCount, setOrderCount] = useState(0); 
+  const [vendors, setVendors] = useState(0);
 
   // Fetch users, products, and orders data from the API
   useEffect(() => {
@@ -55,7 +56,22 @@ const DashboardContent = () => {
       .catch((error) => {
         console.error("Error fetching order data:", error);
       });
-  }, []); // Empty dependency array means this useEffect runs once when the component mounts
+  }, []); 
+
+  //Fetch Vendors
+  axios
+      .get("api/Vendor", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      })
+      .then((response) => {
+        const res = response.data.data;
+        setVendors(res.length);
+      })
+      .catch((error) => {
+        console.error("Error fetching order data:", error);
+      });
 
   return (
     <div>
@@ -65,7 +81,7 @@ const DashboardContent = () => {
           { title: 'Total Users', value: userCount, icon: <Users size={24} />, color: 'primary' }, // Use dynamic user count here
           { title: 'Total Products', value: productCount, icon: <Package size={24} />, color: 'success' }, // Use dynamic product count
           { title: 'Total Orders', value: orderCount, icon: <ShoppingCart size={24} />, color: 'info' }, // Use dynamic order count
-          { title: 'Total Vendors', value: '456', icon: <Briefcase size={24} />, color: 'warning' },
+          { title: 'Total Vendors', value: vendors, icon: <Briefcase size={24} />, color: 'warning' },
         ].map((stat, index) => (
           <Col md={4} key={index}>
             <Card className={`mb-4 bg-${stat.color} text-white`}>
