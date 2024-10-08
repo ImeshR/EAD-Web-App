@@ -9,12 +9,17 @@ import Reports from "./pages/Reports/page";
 import VendorDashboard from "./pages/VendorDashboard/page";
 import { UserProvider } from "./services/hooks/UserContext";
 import ProtectedRoute from "./services/hooks/ProtectedRoute";
+import Unauthorized from "./pages/Unauthorized/Unauthorized";
 
 function App() {
   return (
     <UserProvider>
       <div>
         <Routes>
+          <Route
+          path="/unauthorized"
+          element={<Unauthorized />}
+          />
           <Route
             path="/login"
             element={<Login />}
