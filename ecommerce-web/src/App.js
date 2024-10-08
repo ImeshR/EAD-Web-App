@@ -8,22 +8,55 @@ import Notifications from "./pages/Notifications/page";
 import Reports from "./pages/Reports/page";
 import VendorDashboard from "./pages/VendorDashboard/page";
 import { UserProvider } from "./services/hooks/UserContext";
-
+import ProtectedRoute from "./services/hooks/ProtectedRoute";
 
 function App() {
   return (
     <UserProvider>
-    <div>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/profile" element={<MyProfile/>} />
-        <Route path="/notification" element={<Notifications />} />
-        <Route path="/report" element={<Reports />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/csr-dashboard" element={<CSRDashboard/>} />
-        <Route path="/vendor-dashboard" element={<VendorDashboard/>} />
-      </Routes>
-    </div>
+      <div>
+        <Routes>
+          <Route
+            path="/login"
+            element={<Login />}
+          />
+          <Route
+            path="/profile"
+            element={<MyProfile />}
+          />
+          <Route
+            path="/notification"
+            element={<Notifications />}
+          />
+          <Route
+            path="/report"
+            element={<Reports />}
+          />
+          <Route
+            path="/admin-dashboard"
+            element={
+              <ProtectedRoute requiredRole="Admin">
+                <AdminDashboard />{" "}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/csr-dashboard"
+            element={
+              <ProtectedRoute requiredRole="CSR">
+                <CSRDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vendor-dashboard"
+            element={
+              <ProtectedRoute requiredRole="Vendor">
+                <VendorDashboard />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </div>
     </UserProvider>
   );
 }

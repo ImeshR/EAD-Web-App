@@ -143,12 +143,8 @@ const UserManagementContent = () => {
     e.preventDefault();
 
     const userPayload = {
-      id: editUser.id, // Use the ID of the user to be updated
-      name: editUser.name,
-      email: editUser.email,
-      // Leave password empty, as the password is not shown or updated
-      role: editUser.role,
-      active: editUser.active,
+      id: editUser.id, 
+      name: editUser.name
     };
 
     try {
