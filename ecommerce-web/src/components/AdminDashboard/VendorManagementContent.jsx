@@ -1,27 +1,17 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Table, Button, Badge, Modal, Form, Spinner } from "react-bootstrap";
+import { Table, Button, Badge, Offcanvas, Spinner } from "react-bootstrap";
 import axios from "axios";
 import Swal from "sweetalert2";
-import generateHexId from "../../services/randomId";
+import ReactStars from "react-stars";  // Importing ReactStars for star rating
 
 const VendorManagementContent = () => {
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showOffcanvas, setShowOffcanvas] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
-  const [newVendor, setNewVendor] = useState({
-    id: "",
-    vendorId: "",
-    userId: "",
-    vendorName: "",
-    averageRanking: 0,
-    comments: [],
-  });
   const [users, setUsers] = useState([]);
 
-  // Fetch vendors and users from the API
   useEffect(() => {
     const fetchVendors = async () => {
       try {
@@ -45,11 +35,7 @@ const VendorManagementContent = () => {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-        const vendorRoleId = "66e9782f59553323609b4f1b";
-        const vendorUsers = response.data.data.filter(
-          (user) => user.role === vendorRoleId
-        );
-        setUsers(vendorUsers);
+        setUsers(response.data.data); // User data structure from the API
       } catch (error) {
         console.error("Error fetching users", error);
       }
@@ -61,74 +47,28 @@ const VendorManagementContent = () => {
 
   const handleViewDetails = (vendor) => {
     setSelectedVendor(vendor);
-    setShowModal(true);
-  };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedVendor(null);
-  };
-
-  const handleCreateVendor = () => {
-    setShowCreateModal(true);
-  };
-
-  const handleCloseCreateModal = () => {
-    setShowCreateModal(false);
-    setNewVendor({
-      id: "",
-      vendorId: "",
-      userId: "",
-      vendorName: "",
-      averageRanking: 0,
-      comments: [],
+    // Map users to comments based on customerId
+    const commentsWithUserData = vendor.comments.map((comment) => {
+      // Find the user corresponding to the comment's customerId
+      const user = users.find((user) => user.id === comment.customerId);
+      return {
+        ...comment,
+        userName: user ? user.name : "Unknown", // Assign user name or "Unknown" if not found
+      };
     });
-  };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewVendor((prev) => ({
+    setSelectedVendor((prev) => ({
       ...prev,
-      [name]: value,
+      comments: commentsWithUserData,
     }));
+
+    setShowOffcanvas(true);
   };
 
-  const handleUserSelect = (e) => {
-    const selectedUser = users.find((user) => user.id === e.target.value);
-    if (selectedUser) {
-      setNewVendor((prev) => ({
-        ...prev,
-        userId: selectedUser.id,
-        vendorName: selectedUser.name,
-      }));
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const vendorId = generateHexId();
-
-    const vendorData = {
-      ...newVendor,
-      vendorId,
-      comments: [],
-    };
-
-    try {
-      await axios.post("api/Vendor/create", vendorData, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-      });
-      Swal.fire("Success", "Vendor created successfully!", "success");
-      setVendors((prev) => [...prev, vendorData]);
-      handleCloseCreateModal();
-    } catch (error) {
-      console.error("Error creating vendor", error);
-      Swal.fire("Error", "Failed to create vendor.", "error");
-    }
+  const handleCloseOffcanvas = () => {
+    setShowOffcanvas(false);
+    setSelectedVendor(null);
   };
 
   const handleDeleteVendor = async (vendorId) => {
@@ -161,9 +101,6 @@ const VendorManagementContent = () => {
   return (
     <div>
       <h2 className="mt-4">Manage Vendors</h2>
-      <Button variant="primary" className="mb-3" onClick={handleCreateVendor}>
-        Create Vendor Account
-      </Button>
 
       {loading ? (
         <div className="d-flex justify-content-center">
@@ -188,7 +125,15 @@ const VendorManagementContent = () => {
               <tr key={vendor.id}>
                 <td>{vendor.id}</td>
                 <td>{vendor.vendorName}</td>
-                <td>{vendor.averageRanking} / 5</td>
+                <td>
+                  <ReactStars
+                    count={5}
+                    value={vendor.averageRanking}
+                    size={24}
+                    edit={false}
+                    color2={"#ffd700"}
+                  />
+                </td>
                 <td>{vendor.comments.length} Comments</td>
                 <td>
                   <Badge bg="success">Active</Badge>
@@ -200,7 +145,7 @@ const VendorManagementContent = () => {
                     className="me-2"
                     onClick={() => handleViewDetails(vendor)}
                   >
-                    View Details
+                    View Comments
                   </Button>
                   <Button
                     variant="outline-danger"
@@ -216,90 +161,53 @@ const VendorManagementContent = () => {
         </Table>
       )}
 
-      {/* Modal for Vendor Details */}
-      <Modal show={showModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Vendor Details</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
+      {/* Offcanvas for Vendor Comments */}
+      <Offcanvas
+        show={showOffcanvas}
+        onHide={handleCloseOffcanvas}
+        placement="end"
+        scroll={true}
+        backdrop={true}
+        className="custom-offcanvas"
+      >
+        <Offcanvas.Header closeButton>
+          <Offcanvas.Title>Vendor Comments</Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body>
           {selectedVendor && (
             <div>
-              <p>
-                <strong>Vendor ID:</strong> {selectedVendor.id}
+              <p><strong>Vendor Name:</strong> {selectedVendor.vendorName}</p>
+              <p><strong>Average Rating:</strong>
+                <ReactStars
+                  count={5}
+                  value={selectedVendor.averageRanking} 
+                  size={24}
+                  edit={false}
+                  color2={"#ffd700"}
+                />
               </p>
-              <p>
-                <strong>Vendor Name:</strong> {selectedVendor.vendorName}
-              </p>
-              <p>
-                <strong>Average Rating:</strong> {selectedVendor.averageRanking}
-              </p>
-              <p>
-                <strong>Comments:</strong> {selectedVendor.comments.length}{" "}
-                Comments
-              </p>
+              <h5>Comments:</h5>
+              <ul>
+                {selectedVendor.comments.map((comment) => (
+                  <li key={comment.id}>
+                    <strong>{comment.userName}:</strong> {comment.text}
+                    <br />
+                    <small>{new Date(comment.date).toLocaleString()}</small>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        </Offcanvas.Body>
+      </Offcanvas>
 
-      {/* Modal for Creating New Vendor */}
-      <Modal show={showCreateModal} onHide={handleCloseCreateModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Create Vendor Account</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>User (Select Vendor)</Form.Label>
-              <Form.Select
-                name="userId"
-                onChange={handleUserSelect}
-                required
-              >
-                <option value="">Select a user</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Vendor Name</Form.Label>
-              <Form.Control
-                type="text"
-                name="vendorName"
-                value={newVendor.vendorName}
-                onChange={handleInputChange}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Average Rating</Form.Label>
-              <Form.Control
-                type="number"
-                name="averageRanking"
-                value={newVendor.averageRanking}
-                onChange={handleInputChange}
-                required
-              />
-            </Form.Group>
-            <Button variant="primary" type="submit">
-              Create Vendor
-            </Button>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseCreateModal}>
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <style>
+        {`
+          .custom-offcanvas {
+            width: 800px !important;
+          }
+        `}
+      </style>
     </div>
   );
 };

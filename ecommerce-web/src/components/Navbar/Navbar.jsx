@@ -1,28 +1,25 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
 import { Search, Bell } from "react-feather";
+import { UserContext } from '../../services/hooks/UserContext'; 
+const NavBar = ({ profileImage }) => {
+  const { user, logout } = useContext(UserContext);
 
-const NavBar = ({ userRole, profileImage }) => {
   const getNavBarStyle = () => {
-    switch (userRole) {
+    switch (user?.role) {
       case "vendor":
-        return { bg: "primary", variant: "dark" , name: "Vendor Dashboard"};
+        return { bg: "primary", variant: "dark", name: "Vendor Dashboard" };
       case "csr":
-        return { bg: "", variant: "dark", customStyle: { backgroundColor: "#6a0dad" } , name: "CSR Dashboard"};
+        return { bg: "", variant: "dark", customStyle: { backgroundColor: "#6a0dad" }, name: "CSR Dashboard" };
       default:
-        return { bg: "dark", variant: "dark" , name: "Admin Dashboard"};
+        return { bg: "dark", variant: "dark", name: "Admin Dashboard" };
     }
   };
 
-  const { bg, variant, customStyle , name } = getNavBarStyle();
+  const { bg, variant, customStyle, name } = getNavBarStyle();
 
   return (
-    <Navbar
-      bg={bg}
-      variant={variant}
-      style={customStyle}
-      className="mb-3"
-    >
+    <Navbar bg={bg} variant={variant} style={customStyle} className="mb-3">
       <Container fluid>
         <Navbar.Brand href="#home">{name}</Navbar.Brand>
         <Navbar.Toggle />
@@ -53,12 +50,12 @@ const NavBar = ({ userRole, profileImage }) => {
             <NavDropdown.Item href="#profile">Profile</NavDropdown.Item>
             <NavDropdown.Item href="#settings">Settings</NavDropdown.Item>
             <NavDropdown.Divider />
-            <NavDropdown.Item href="#logout">Logout</NavDropdown.Item>
+            <NavDropdown.Item onClick={logout}>Logout</NavDropdown.Item> {/* Call logout on click */}
           </NavDropdown>
         </Navbar.Collapse>
       </Container>
     </Navbar>
   );
-}
+};
 
 export default NavBar;

@@ -190,7 +190,7 @@ const UserManagementContent = () => {
   };
 
   const handleToggleActiveStatus = async (user) => {
-    const updatedActiveStatus = !user.active; // Toggle active status
+    const updatedActiveStatus = !user.active;
 
     const userPayload = {
       ...user,
@@ -424,15 +424,6 @@ const UserManagementContent = () => {
                   required
                 />
               </Form.Group>
-              {/* Password field is hidden for editing */}
-              {/* <Form.Group className="mb-3">
-                <Form.Label>Password</Form.Label>
-                <Form.Control
-                  type="password"
-                  name="password"
-                  onChange={handleEditInputChange}
-                />
-              </Form.Group> */}
               <Form.Group className="mb-3">
                 <Form.Label>Role</Form.Label>
                 <Form.Control

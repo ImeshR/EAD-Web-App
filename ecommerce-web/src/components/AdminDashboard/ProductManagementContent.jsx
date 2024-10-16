@@ -1,372 +1,204 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Button, Modal, Form, Table } from 'react-bootstrap';
-import Swal from 'sweetalert2';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Button, Table, Image, Offcanvas, Row, Col } from "react-bootstrap";
+import useCategories from "../../services/hooks/useCategories";
+import ProductCreateModal from "./ProductCreateModal";
 
 const VendorManagementContent = () => {
-    const [categories, setCategories] = useState([]);
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [newProduct, setNewProduct] = useState({
-        name: '',
-        description: '',
-        vendorId: '',
-        categoryId: '', // This will hold the selected category ID
-        price: 0,
-        stockCount: 0,
-        active: true,
-    });
-    const [editProduct, setEditProduct] = useState(null);
-    const [products, setProducts] = useState([]);
+  const { categories, loading: categoriesLoading } = useCategories();
+  const [products, setProducts] = useState([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showOffcanvas, setShowOffcanvas] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
-    useEffect(() => {
-        fetchCategories();
-        fetchProducts();
-    }, []);
+  const handleCreateModalHide = () => setShowCreateModal(false);
+  const handleOffcanvasClose = () => setShowOffcanvas(false);
 
-    const fetchCategories = async () => {
-        try {
-            const response = await axios.get('api/Category',
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
-                }
-            );
-            setCategories(response.data.data); // Adjust based on your response structure
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-        }
-    };
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-    const fetchProducts = async () => {
-        try {
-            const response = await axios.get('api/Product',
-                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-            ); // Adjust the endpoint accordingly
-            setProducts(response.data.data); // Adjust based on your response structure
-        } catch (error) {
-            console.error('Error fetching products:', error);
-        }
-    };
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get("api/Product", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setProducts(response.data.data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
+  };
 
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setNewProduct((prev) => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value,
-        }));
-    };
+  const getCategoryName = (categoryId) => {
+    const category = categories.find((cat) => cat.id === categoryId);
+    return category ? category.name : "N/A";
+  };
 
-    const handleCreateSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            await axios.post('api/Product/create', newProduct ,
-                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-            ); // Adjust the endpoint accordingly
-            Swal.fire('Success', 'Product created successfully!', 'success');
-            setShowCreateModal(false);
-            fetchProducts(); // Refresh product list
-        } catch (error) {
-            console.error('Error creating product:', error);
-            Swal.fire('Error', 'There was an error creating the product.', 'error');
-        }
-    };
+  const handleImageClick = (product) => {
+    setSelectedProduct(product);
+    setShowOffcanvas(true);
+  };
 
-    const handleCloseCreateModal = () => {
-        setShowCreateModal(false);
-        setNewProduct({
-            name: '',
-            description: '',
-            vendorId: '',
-            categoryId: '',
-            price: 0,
-            stockCount: 0,
-            active: true,
-        });
-    };
+  return (
+    <div>
+      <Button
+        variant="primary"
+        onClick={() => setShowCreateModal(true)}
+        className="mb-3"
+      >
+        Create New Product
+      </Button>
 
-    // Handle edit functionality
-    const handleEditSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            await axios.put(`api/Product/update/${editProduct.id}`, editProduct ,
-                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-            ); // Adjust the endpoint accordingly
-            Swal.fire('Success', 'Product updated successfully!', 'success');
-            setShowEditModal(false);
-            fetchProducts(); // Refresh product list
-        } catch (error) {
-            console.error('Error updating product:', error);
-            Swal.fire('Error', 'There was an error updating the product.', 'error');
-        }
-    };
+      {categoriesLoading ? (
+        <div>Loading categories...</div>
+      ) : (
+        <Table
+          striped
+          bordered
+          hover
+        >
+          <thead>
+            <tr>
+              <th>Image & Name</th>
+              <th>Description</th>
+              <th>Vendor ID</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock Count</th>
+              <th>Active</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((product) => (
+              <tr key={product.id}>
+                <td className="text-center align-middle">
+                  {product.images.length > 0 && (
+                    <Image
+                      src={product.images[0]}
+                      thumbnail
+                      style={{ width: "80px", cursor: "pointer" }}
+                      onClick={() => handleImageClick(product)}
+                    />
+                  )}
+                  <div>{product.name}</div>
+                </td>
+                <td className="align-middle">{product.description}</td>
+                <td className="align-middle">{product.vendorId}</td>
+                <td className="align-middle">
+                  {getCategoryName(product.categoryId)}
+                </td>
+                <td className="align-middle">{product.price}</td>
+                <td className="align-middle">{product.stockCount}</td>
+                <td className="align-middle">
+                  {product.active ? "Yes" : "No"}
+                </td>
+                <td className="align-middle">
+                  <Button>Edit</Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
 
-    const handleCloseEditModal = () => {
-        setShowEditModal(false);
-        setEditProduct(null);
-    };
+      <ProductCreateModal
+        show={showCreateModal}
+        onHide={handleCreateModalHide}
+      />
 
-    const handleEditInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setEditProduct((prev) => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value,
-        }));
-    };
-
-    const handleEditToggleActive = () => {
-        setEditProduct((prev) => ({
-            ...prev,
-            active: !prev.active,
-        }));
-    };
-
-    const handleToggleActive = () => {
-        setNewProduct((prev) => ({
-            ...prev,
-            active: !prev.active,
-        }));
-    };
-
-    const handleDeleteProduct = async (id) => {
-        const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!',
-        });
-
-        if (result.isConfirmed) {
-            try {
-                await axios.delete(`api/Product/delete/${id}`); // Adjust the endpoint accordingly
-                Swal.fire('Deleted!', 'Your product has been deleted.', 'success');
-                fetchProducts(); // Refresh product list
-            } catch (error) {
-                console.error('Error deleting product:', error);
-                Swal.fire('Error', 'There was an error deleting the product.', 'error');
+      {selectedProduct && (
+        <Offcanvas
+          show={showOffcanvas}
+          onHide={handleOffcanvasClose}
+          placement="end"
+          className="custom-offcanvas"
+        >
+          <Offcanvas.Header closeButton>
+            <Offcanvas.Title>{selectedProduct.name}</Offcanvas.Title>
+          </Offcanvas.Header>
+          <Offcanvas.Body>
+            <Row>
+              <Col xs={4}>
+                <Image
+                  src={selectedProduct.images[0]}
+                  rounded
+                  style={{ width: "100%" }} // Small image, fills its container
+                />
+              </Col>
+              <Col xs={8}>
+                <h5 className="mt-3">Product Details</h5>
+                <div className="product-info">
+                  <p>
+                    <strong>Description:</strong> {selectedProduct.description}
+                  </p>
+                  <p>
+                    <strong>Price:</strong> ${selectedProduct.price}
+                  </p>
+                  <p>
+                    <strong>Stock Count:</strong> {selectedProduct.stockCount}
+                  </p>
+                  <p>
+                    <strong>Category:</strong>{" "}
+                    {getCategoryName(selectedProduct.categoryId)}
+                  </p>
+                  <p>
+                    <strong>Active:</strong>{" "}
+                    {selectedProduct.active ? "Yes" : "No"}
+                  </p>
+                  <p>
+                    <strong>Average Rating:</strong>{" "}
+                    {selectedProduct.averageRating}
+                  </p>
+                  <p>
+                    <strong>Vendor ID:</strong> {selectedProduct.vendorId}
+                  </p>
+                  <p>
+                    <strong>Product ID:</strong> {selectedProduct.id}
+                  </p>
+                  <p>
+                    <strong>Created At:</strong>{" "}
+                    {new Date(selectedProduct.createdAt).toLocaleString()}
+                  </p>
+                  <p>
+                    <strong>Updated At:</strong>{" "}
+                    {new Date(selectedProduct.updatedAt).toLocaleString()}
+                  </p>
+                  <p>
+                    <strong>Ratings:</strong>{" "}
+                    {selectedProduct.ratings.length > 0
+                      ? selectedProduct.ratings.join(", ")
+                      : "No Ratings"}
+                  </p>
+                </div>
+              </Col>
+            </Row>
+          </Offcanvas.Body>
+        </Offcanvas>
+      )}
+      <style>
+        {`
+            .custom-offcanvas .offcanvas {
+            width: 800px !important;
             }
-        }
-    };
-    return (
-        <div>
-            <Button variant="primary" onClick={() => setShowCreateModal(true)}>
-                Create New Product
-            </Button>
 
-            <Table striped bordered hover>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Vendor ID</th>
-                        <th>Category</th>
-                        <th>Price</th>
-                        <th>Stock Count</th>
-                        <th>Active</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {products.map((product) => (
-                        <tr key={product.id}>
-                            <td>{product.name}</td>
-                            <td>{product.description}</td>
-                            <td>{product.vendorId}</td>
-                            <td>{categories.find(cat => cat.categoryId === product.categoryId)?.name || 'N/A'}</td>
-                            <td>{product.price}</td>
-                            <td>{product.stockCount}</td>
-                            <td>{product.active ? 'Yes' : 'No'}</td>
-                            <td>
-                                <Button onClick={() => {
-                                    setEditProduct(product);
-                                    setShowEditModal(true);
-                                }}>Edit</Button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </Table>
+            .product-info p {
+            font-size: 16px;
+            margin-bottom: 10px;
+            }
 
-            {/* Create Product Modal */}
-            <Modal show={showCreateModal} onHide={handleCloseCreateModal}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Create New Product</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form onSubmit={handleCreateSubmit}>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Name</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="name"
-                                value={newProduct.name}
-                                onChange={handleInputChange}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Description</Form.Label>
-                            <Form.Control
-                                as="textarea"
-                                name="description"
-                                value={newProduct.description}
-                                onChange={handleInputChange}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Vendor ID</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="vendorId"
-                                value={newProduct.vendorId}
-                                onChange={handleInputChange}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Category</Form.Label>
-                            <Form.Select
-                                name="categoryId"
-                                value={newProduct.categoryId}
-                                onChange={handleInputChange}
-                                required
-                            >
-                                <option value="">Select a category</option>
-                                {categories.map((category) => (
-                                    <option key={category.id} value={category.categoryId}>
-                                        {category.name}
-                                    </option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Price</Form.Label>
-                            <Form.Control
-                                type="number"
-                                name="price"
-                                value={newProduct.price}
-                                onChange={handleInputChange}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Stock Count</Form.Label>
-                            <Form.Control
-                                type="number"
-                                name="stockCount"
-                                value={newProduct.stockCount}
-                                onChange={handleInputChange}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Check
-                                type="checkbox"
-                                label="Active"
-                                checked={newProduct.active}
-                                onChange={handleToggleActive}
-                            />
-                        </Form.Group>
-                        <Button variant="primary" type="submit">
-                            Create Product
-                        </Button>
-                    </Form>
-                </Modal.Body>
-            </Modal>
+            .product-info p strong {
+            color: #007bff; /* Blue for emphasis */
+            font-weight: bold;
+            }
 
-            {/* Edit Product Modal */}
-            <Modal show={showEditModal} onHide={handleCloseEditModal}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Edit Product</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form onSubmit={handleEditSubmit}>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Name</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="name"
-                                value={editProduct?.name}
-                                onChange={handleEditInputChange}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Description</Form.Label>
-                            <Form.Control
-                                as="textarea"
-                                name="description"
-                                value={editProduct?.description}
-                                onChange={handleEditInputChange}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Vendor ID</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="vendorId"
-                                value={editProduct?.vendorId}
-                                onChange={handleEditInputChange}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Category</Form.Label>
-                            <Form.Select
-                                name="categoryId"
-                                value={editProduct?.categoryId}
-                                onChange={handleEditInputChange}
-                                required
-                            >
-                                {categories.map((category) => (
-                                    <option key={category.id} value={category.categoryId}>
-                                        {category.name}
-                                    </option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Price</Form.Label>
-                            <Form.Control
-                                type="number"
-                                name="price"
-                                value={editProduct?.price}
-                                onChange={handleEditInputChange}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Stock Count</Form.Label>
-                            <Form.Control
-                                type="number"
-                                name="stockCount"
-                                value={editProduct?.stockCount}
-                                onChange={handleEditInputChange}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Check
-                                type="checkbox"
-                                label="Active"
-                                checked={editProduct?.active}
-                                onChange={handleEditToggleActive}
-                            />
-                        </Form.Group>
-                        <Button variant="primary" type="submit">
-                            Update Product
-                        </Button>
-                    </Form>
-                </Modal.Body>
-            </Modal>
-        </div>
-    );
+            img {
+            border-radius: 10px; /* Rounded image edges */
+            }
+        `}
+      </style>
+    </div>
+  );
 };
 
 export default VendorManagementContent;

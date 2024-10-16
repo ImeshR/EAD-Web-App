@@ -2,7 +2,6 @@ import React, { useContext } from "react";
 import { Navigate } from "react-router-dom";
 import { UserContext } from "../hooks/UserContext";
 
-//route guard
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, isLoading } = useContext(UserContext);
 

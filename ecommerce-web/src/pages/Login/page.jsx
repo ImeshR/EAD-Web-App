@@ -28,16 +28,15 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Make the login API request
       const response = await axios.post(`/api/User/login`, {
           email: email,
           password: password,
         }
       );
 
-      console.log(response);
+    
 
-      if (response.status === 200) {
+      if (response.data.message === "Login successful") {
         const token = response.data.data.token;
         localStorage.setItem("token", token);
 
