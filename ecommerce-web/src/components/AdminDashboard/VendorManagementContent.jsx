@@ -12,39 +12,6 @@ const VendorManagementContent = () => {
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [users, setUsers] = useState([]);
 
-  useEffect(() => {
-    const fetchVendors = async () => {
-      try {
-        const response = await axios.get("api/Vendor", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setVendors(response.data.data);
-      } catch (error) {
-        console.error("Error fetching vendors", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchUsers = async () => {
-      try {
-        const response = await axios.get("api/User", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setUsers(response.data.data); // User data structure from the API
-      } catch (error) {
-        console.error("Error fetching users", error);
-      }
-    };
-
-    fetchVendors();
-    fetchUsers();
-  }, []);
-
   const handleViewDetails = (vendor) => {
     setSelectedVendor(vendor);
 

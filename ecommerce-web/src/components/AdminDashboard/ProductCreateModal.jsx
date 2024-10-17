@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Button, Form, Offcanvas, Spinner } from "react-bootstrap";
 import useCategories from "../../services/hooks/useCategories";
+import useVendors from "../../services/hooks/useVendors";
 import Swal from "sweetalert2";
 import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import { storage } from "../../services/firebase-config";
 
-const ProductCreateModal = ({ show, onHide }) => {
-  const { categories, loading: categoriesLoading } = useCategories(); // Fetch categories
+const ProductCreateModal = ({ show, onHide , onProductCreated }) => {
+  const { categories, loading: categoriesLoading } = useCategories();
+  const { vendors, loading: vendorsLoading } = useVendors();
   const [product, setProduct] = useState({
     name: "",
     description: "",
@@ -51,7 +53,6 @@ const ProductCreateModal = ({ show, onHide }) => {
       uploadTask.on(
         "state_changed",
         (snapshot) => {
-          // Optional: track upload progress
           const progress =
             (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           console.log(`Upload is ${progress}% done`);
@@ -61,11 +62,9 @@ const ProductCreateModal = ({ show, onHide }) => {
           Swal.fire("Error", "Image upload failed", "error");
         },
         async () => {
-          // Corrected this part to access the ref without parentheses
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           uploadedImages.push(downloadURL);
 
-          // Update product state with the new image URLs
           setProduct((prevProduct) => ({
             ...prevProduct,
             images: [...prevProduct.images, ...uploadedImages],
@@ -76,7 +75,7 @@ const ProductCreateModal = ({ show, onHide }) => {
   };
 
   const handleSubmit = async () => {
-    const currentDate = new Date().toISOString(); // Get the current date
+    const currentDate = new Date().toISOString(); 
     const newProduct = {
       ...product,
       createdAt: currentDate,
@@ -84,6 +83,8 @@ const ProductCreateModal = ({ show, onHide }) => {
       ratings: [0],
       averageRating: 0,
     };
+
+    console.log("new product", newProduct);
 
     try {
       await axios.post("api/Product/create", newProduct, {
@@ -93,12 +94,16 @@ const ProductCreateModal = ({ show, onHide }) => {
       });
 
       Swal.fire("Success!", "Product created successfully.", "success");
+      
+      if (onProductCreated) onProductCreated();
+
       onHide();
     } catch (error) {
       console.error("Error creating product:", error);
       Swal.fire("Error", "Failed to create product.", "error");
     }
   };
+
 
   return (
     <>
@@ -145,6 +150,34 @@ const ProductCreateModal = ({ show, onHide }) => {
                 />
               </Form.Group>
 
+              <Form.Group controlId="formVendorSelect">
+                <Form.Label>Vendor</Form.Label>
+                {vendorsLoading ? (
+                  <Spinner
+                    animation="border"
+                    role="status"
+                  >
+                    <span className="visually-hidden">Loading...</span>
+                  </Spinner>
+                ) : (
+                  <Form.Control
+                    as="select"
+                    name="vendorId"
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Select Vendor</option>
+                    {vendors.map((vendor) => (
+                      <option
+                        key={vendor.id}
+                        value={vendor.id}
+                      >
+                        {vendor.name}
+                      </option>
+                    ))}
+                  </Form.Control>
+                )}
+              </Form.Group>
+
               <Form.Group controlId="formCategorySelect">
                 <Form.Label>Category</Form.Label>
                 <Form.Control
@@ -157,7 +190,7 @@ const ProductCreateModal = ({ show, onHide }) => {
                       key={category.id}
                       value={category.id}
                     >
-                      {category.name} (ID: {category.id})
+                      {category.name}
                     </option>
                   ))}
                 </Form.Control>
