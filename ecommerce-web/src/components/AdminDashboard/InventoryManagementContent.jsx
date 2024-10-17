@@ -1,63 +1,118 @@
-import React from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import { Row, Col, Table, Button, Badge, Form } from "react-bootstrap";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  Button,
+  Table,
+  Image,
+  Badge,
+} from "react-bootstrap";
+import useCategories from "../../services/hooks/useCategories";
+import useVendors from "../../services/hooks/useVendors";
+import ProductInventoryOffcanvas from "./ProductInventoryOffcanvas"; // Import the component
 
 const VendorManagementContent = () => {
+  const { categories, loading: categoriesLoading } = useCategories();
+  const { vendors, loading: vendorsLoading } = useVendors();
+  const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null); // For product details
+  const [showOffcanvas, setShowOffcanvas] = useState(false); // Control offcanvas visibility
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get("api/Product", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+
+      if (response.data && Array.isArray(response.data.data)) {
+        setProducts(response.data.data);
+      } else {
+        throw new Error("Invalid data format received from API");
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setProducts([]);
+    }
+  };
+
+  const getCategoryName = (categoryId) => {
+    const category = categories.find((cat) => cat.id === categoryId);
+    return category ? category.name : "N/A";
+  };
+
+  const getVendorName = (vendorId) => {
+    const vendor = vendors.find((v) => v.id === vendorId);
+    return vendor ? vendor.name : "N/A";
+  };
+
+  const handleImageClick = (product) => {
+    const productWithDetails = {
+      ...product,
+      vendorName: getVendorName(product.vendorId),
+      categoryName: getCategoryName(product.categoryId),
+    };
+    setSelectedProduct(productWithDetails); // Set the selected product details
+    setShowOffcanvas(true); // Show the offcanvas
+  };
+
+  const handleCloseOffcanvas = () => setShowOffcanvas(false); // Hide the offcanvas
+
   return (
     <div>
       <h2 className="mt-4">Manage Inventory</h2>
-      <Form className="mb-3">
-        <Row>
-          <Col md={4}>
-            <Form.Group>
-              <Form.Label>Stock Level</Form.Label>
-              <Form.Control as="select">
-                <option>All</option>
-                <option>In Stock</option>
-                <option>Low Stock</option>
-                <option>Out of Stock</option>
-              </Form.Control>
-            </Form.Group>
-          </Col>
-        </Row>
-      </Form>
       <Table striped bordered hover>
         <thead>
           <tr>
-            <th>Inventory ID</th>
-            <th>Product ID</th>
-            <th>Vendor ID</th>
-            <th>Quantity Available</th>
-            <th>Low Stock Alert</th>
-            <th>Last Updated</th>
-            <th>Actions</th>
+            <th>Image & Name</th>
+            <th>Vendor Name</th>
+            <th>Category</th>
+            <th>Stock Count</th>
+            <th>Active</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>12345-abcde</td>
-            <td>67890-fghij</td>
-            <td>11111-aaaaa</td>
-            <td>50</td>
-            <td><Badge bg="success">No</Badge></td>
-            <td>2023-05-01</td>
-            <td>
-              <Button variant="outline-primary" size="sm">Update Stock</Button>
-            </td>
-          </tr>
-          <tr>
-            <td>67890-fghij</td>
-            <td>12345-abcde</td>
-            <td>22222-bbbbb</td>
-            <td>5</td>
-            <td><Badge bg="warning" text="dark">Yes</Badge></td>
-            <td>2023-05-02</td>
-            <td>
-              <Button variant="outline-primary" size="sm">Update Stock</Button>
-            </td>
-          </tr>
+          {products.map((product) => (
+            <tr key={product.id}>
+              <td className="text-center align-middle">
+                {product.images.length > 0 && (
+                  <Image
+                    src={product.images[0]}
+                    thumbnail
+                    style={{ width: "80px", cursor: "pointer" }}
+                    onClick={() => handleImageClick(product)} // Show product details on click
+                  />
+                )}
+                <div>{product.name}</div>
+              </td>
+              <td className="align-middle">
+                {getVendorName(product.vendorId)}
+              </td>
+              <td className="align-middle">
+                {getCategoryName(product.categoryId)}
+              </td>
+              <td className="align-middle">{product.stockCount}</td>
+              <td className="align-middle">
+                <Badge bg={product.active ? "success" : "warning"} text={product.active ? "white" : "dark"}>
+                  {product.active ? "Active" : "Inactive"}
+                </Badge>
+              </td>
+              <td className="align-middle">
+                {/* You can add action buttons like Edit or Delete here */}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </Table>
+
+      {/* Offcanvas for product details */}
+      <ProductInventoryOffcanvas 
+        show={showOffcanvas} 
+        handleClose={handleCloseOffcanvas} 
+        product={selectedProduct} 
+      />
     </div>
   );
 };

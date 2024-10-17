@@ -124,7 +124,7 @@ const VendorManagementContent = () => {
             <tr>
               <th>Image & Name</th>
               <th>Description</th>
-              <th>Vendor ID</th>
+              <th>Vendor Name</th>
               <th>Category</th>
               <th>Price</th>
               <th>Stock Count</th>
