@@ -10,20 +10,17 @@ export default function DashboardContent() {
   const [rating, setRating] = useState(0); 
   const { user, logout } = useContext(UserContext);
 
-  // Metrics data (for static metrics like Total Sales, Active Products, etc.)
   const metrics = [
     { title: 'Total Sales', value: '$10,245', color: 'primary' },
-    { title: 'Active Products', value: '24', color: 'success' },
     { title: 'Number of Orders', value: '85', color: 'info' },
     { title: 'Vendor Rating', value: `${rating}/5 ⭐`, color: 'danger' }
   ];
 
-  // Fetch product data from API
   const fetchProductData = async () => {
     try {
       const response = await axios.get(`/api/Product/vendor/${user.id}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // Use the correct token if needed
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         }
       });
 
@@ -36,7 +33,6 @@ export default function DashboardContent() {
     }
   };
 
-  // Fetch vendor reviews data from API
   const fetchReviews = async () => {
     try {
       const response = await axios.get(`api/Review/vendor/${user.id}`, {
@@ -48,19 +44,16 @@ export default function DashboardContent() {
       const fetchedReviews = response.data.data;
       setReviews(fetchedReviews);
 
-      // Calculate the average rating
       const totalRating = fetchedReviews.reduce((acc, review) => acc + review.rating, 0);
       const averageRating = totalRating / fetchedReviews.length;
 
-      // Set the rating state
-      setRating(averageRating || 0); // Ensure that if no reviews, the rating is set to 0
+      setRating(averageRating || 0);
 
     } catch (error) {
       console.error("Error fetching reviews data:", error);
     }
   };
 
-  // Fetch product data on component mount
   useEffect(() => {
     fetchProductData();
     fetchReviews();
@@ -73,7 +66,6 @@ export default function DashboardContent() {
     <div>
       <h2 className="mt-4">Vendor Dashboard</h2>
       <Row>
-        {/* Static Metrics */}
         {metrics.map(metric => (
           <Col md={4} key={metric.title}>
             <Card className={`mb-4 bg-${metric.color} text-white`}>
