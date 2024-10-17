@@ -1,21 +1,23 @@
-import React, { useState , useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Button, Spinner, Alert } from 'react-bootstrap';
 import axios from 'axios';
 import OrderDetailsOffcanvas from './OrderDetailsOffcanvas';
+import { UserContext } from '../../services/hooks/UserContext';
 
 export default function OrdersContent() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [error, setError] = useState(null);
+  const { user } = useContext(UserContext);
 
   // Fetch orders from the API
   const fetchOrders = async () => {
     try {
-      const response = await axios.get('/api/Order/items/vendor/692280f2d7e619e901774f25', {
+      const response = await axios.get(`/api/Order/items/vendor/${user.id}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // Use token if needed
+          Authorization: `Bearer ${localStorage.getItem('token')}`, // Use token if needed
         },
       });
 
@@ -31,16 +33,16 @@ export default function OrdersContent() {
     fetchOrders();
   }, []);
 
-  // Open the Offcanvas and set selected order ID
-  const handleShowOffcanvas = (orderId) => {
-    setSelectedOrderId(orderId);
+  // Open the Offcanvas and set selected order
+  const handleShowOffcanvas = (order) => {
+    setSelectedOrder(order);
     setShowOffcanvas(true);
   };
 
   // Handle closing the Offcanvas
   const handleCloseOffcanvas = () => {
     setShowOffcanvas(false);
-    setSelectedOrderId(null);
+    setSelectedOrder(null);
   };
 
   return (
@@ -65,28 +67,28 @@ export default function OrdersContent() {
           <thead className="bg-warning text-dark">
             <tr>
               <th>Order ID</th>
-              <th>Customer</th>
-              <th>Status</th>
-              <th>Total</th>
+              <th>Product ID</th>
+              <th>Quantity</th>
+              <th>Price at Purchase</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {orders.map((order) => (
-              <tr key={order.productId}>
-                <td>{order.productId}</td>
-                <td>{order.customer}</td>
-                <td><span className={`badge bg-${order.statusColor}`}>{order.status}</span></td>
-                <td>{order.total}</td>
+              <tr key={order.orderId}>
+                <td>{order.orderId}</td>
+                <td>{order.item?.productId || 'N/A'}</td>
+                <td>{order.item?.quantity || '0'}</td>
+                <td>{order.item?.priceAtPurchase || '0'}</td>
                 <td>
-                  <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleShowOffcanvas(order.productId)}>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    className="me-2"
+                    onClick={() => handleShowOffcanvas(order)}
+                  >
                     View Details
                   </Button>
-                  {order.status === 'Ready' ? (
-                    <Button variant="outline-info" size="sm">Mark as Delivered</Button>
-                  ) : (
-                    <Button variant="outline-success" size="sm">Mark as Ready</Button>
-                  )}
                 </td>
               </tr>
             ))}
@@ -94,11 +96,11 @@ export default function OrdersContent() {
         </table>
       )}
 
-      {/* Offcanvas for Viewing Order Details */}
       <OrderDetailsOffcanvas
         show={showOffcanvas}
         handleClose={handleCloseOffcanvas}
-        orderId={selectedOrderId}
+        order={selectedOrder} 
+        refreshOrders={fetchOrders}
       />
     </div>
   );
