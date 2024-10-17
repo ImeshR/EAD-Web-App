@@ -1,4 +1,3 @@
-// OrderManagementContent.js
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Row, Col, Table, Button, Badge, Form, Spinner, Pagination } from "react-bootstrap";
@@ -223,6 +222,7 @@ const OrderManagementContent = () => {
         show={showOffcanvas}
         onHide={handleCloseOffcanvas}
         order={selectedOrder}
+        refreshOrders={fetchOrders}
       />
     </div>
   );

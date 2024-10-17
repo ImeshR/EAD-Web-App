@@ -1,104 +1,120 @@
-import React, { useState } from 'react'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import { Row, Col, Table, Button, Badge, Form, Modal } from 'react-bootstrap'
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  Button,
+  Table,
+  Image,
+  Badge,
+} from "react-bootstrap";
+import useCategories from "../../services/hooks/useCategories";
+import useVendors from "../../services/hooks/useVendors";
+import ProductInventoryOffcanvas from "./ProductInventoryOffcanvas";
 
 const InventoryManagementContent = () => {
-  const [showModal, setShowModal] = useState(false)
-  const [selectedInventory, setSelectedInventory] = useState(null)
-  const [newStock, setNewStock] = useState('')
+  const { categories, loading: categoriesLoading } = useCategories();
+  const { vendors, loading: vendorsLoading } = useVendors();
+  const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null); // For product details
+  const [showOffcanvas, setShowOffcanvas] = useState(false); // Control offcanvas visibility
 
-  const inventory = [
-    { id: '12345-abcde', productId: '67890-fghij', vendorId: '11111-aaaaa', quantity: 50, lowStockAlert: 'No', lastUpdated: '2023-05-01', badgeColor: 'success' },
-    { id: '67890-fghij', productId: '12345-abcde', vendorId: '22222-bbbbb', quantity: 5, lowStockAlert: 'Yes', lastUpdated: '2023-05-02', badgeColor: 'warning' }
-  ]
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-  const handleUpdateStock = (inventoryItem) => {
-    setSelectedInventory(inventoryItem)
-    setNewStock(inventoryItem.quantity)
-    setShowModal(true)
-  }
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get("api/Product", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
 
-  const handleSaveStock = () => {
-    // Update stock logic can go here (e.g., API call to update inventory)
-    console.log(`Updated stock for ${selectedInventory.id}: ${newStock}`)
-    setShowModal(false)
-  }
+      if (response.data && Array.isArray(response.data.data)) {
+        setProducts(response.data.data);
+      } else {
+        throw new Error("Invalid data format received from API");
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setProducts([]);
+    }
+  };
+
+  const getCategoryName = (categoryId) => {
+    const category = categories.find((cat) => cat.id === categoryId);
+    return category ? category.name : "N/A";
+  };
+
+  const getVendorName = (vendorId) => {
+    const vendor = vendors.find((v) => v.id === vendorId);
+    return vendor ? vendor.name : "N/A";
+  };
+
+  const handleImageClick = (product) => {
+    const productWithDetails = {
+      ...product,
+      vendorName: getVendorName(product.vendorId),
+      categoryName: getCategoryName(product.categoryId),
+    };
+    setSelectedProduct(productWithDetails); // Set the selected product details
+    setShowOffcanvas(true); // Show the offcanvas
+  };
+
+  const handleCloseOffcanvas = () => setShowOffcanvas(false); // Hide the offcanvas
 
   return (
     <div>
       <h2 className="mt-4">Manage Inventory</h2>
-      <Form className="mb-3">
-        <Row>
-          <Col md={4}>
-            <Form.Group>
-              <Form.Label>Stock Level</Form.Label>
-              <Form.Control as="select">
-                <option>All</option>
-                <option>In Stock</option>
-                <option>Low Stock</option>
-                <option>Out of Stock</option>
-              </Form.Control>
-            </Form.Group>
-          </Col>
-        </Row>
-      </Form>
       <Table striped bordered hover>
         <thead>
           <tr>
-            <th>Inventory ID</th>
-            <th>Product ID</th>
-            <th>Vendor ID</th>
-            <th>Quantity Available</th>
-            <th>Low Stock Alert</th>
-            <th>Last Updated</th>
-            <th>Actions</th>
+            <th>Image & Name</th>
+            <th>Vendor Name</th>
+            <th>Category</th>
+            <th>Stock Count</th>
+            <th>Active</th>
           </tr>
         </thead>
         <tbody>
-          {inventory.map(item => (
-            <tr key={item.id}>
-              <td>{item.id}</td>
-              <td>{item.productId}</td>
-              <td>{item.vendorId}</td>
-              <td>{item.quantity}</td>
-              <td><Badge bg={item.badgeColor}>{item.lowStockAlert}</Badge></td>
-              <td>{item.lastUpdated}</td>
-              <td>
-                <Button variant="primary" size="sm" onClick={() => handleUpdateStock(item)}>Update Stock</Button>
+          {products.map((product) => (
+            <tr key={product.id}>
+              <td className="text-center align-middle">
+                {product.images.length > 0 && (
+                  <Image
+                    src={product.images[0]}
+                    thumbnail
+                    style={{ width: "80px", cursor: "pointer" }}
+                    onClick={() => handleImageClick(product)} // Show product details on click
+                  />
+                )}
+                <div>{product.name}</div>
+              </td>
+              <td className="align-middle">
+                {getVendorName(product.vendorId)}
+              </td>
+              <td className="align-middle">
+                {getCategoryName(product.categoryId)}
+              </td>
+              <td className="align-middle">{product.stockCount}</td>
+              <td className="align-middle">
+                <Badge bg={product.active ? "success" : "warning"} text={product.active ? "white" : "dark"}>
+                  {product.active ? "Active" : "Inactive"}
+                </Badge>
+              </td>
+              <td className="align-middle">
+                {/* You can add action buttons like Edit or Delete here */}
               </td>
             </tr>
           ))}
         </tbody>
       </Table>
 
-      {/* Modal for Updating Stock */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Update Stock for {selectedInventory?.id}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group>
-              <Form.Label>New Stock Quantity</Form.Label>
-              <Form.Control
-                type="number"
-                value={newStock}
-                onChange={(e) => setNewStock(e.target.value)}
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Close
-          </Button>
-          <Button variant="primary" onClick={handleSaveStock}>
-            Save Changes
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {/* Offcanvas for product details */}
+      <ProductInventoryOffcanvas 
+        show={showOffcanvas} 
+        handleClose={handleCloseOffcanvas} 
+        product={selectedProduct} 
+      />
     </div>
-  )
-}
+  );
+};
 
-export default InventoryManagementContent
+export default InventoryManagementContent;
