@@ -1,26 +1,56 @@
 import React, { useContext } from 'react';
 import { Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
-import { Search, Bell } from "react-feather";
-import { Badge } from 'antd';  // Import Badge from antd
+import { Bell } from "react-feather";
+import { Badge, notification, Button } from 'antd';  // Import AntD components
 import { UserContext } from '../../services/hooks/UserContext'; 
+import useNotifications from '../../services/hooks/useNotifications';  // Import the custom hook
 
-const NavBar = ({ profileImage }) => {  // notificationCount as prop
+const NavBar = ({ profileImage }) => {
   const { user, logout } = useContext(UserContext);
+  const { notifications, unreadCount, clearNotifications } = useNotifications(user?.id);  // Get notifications, unread count, and clear function
 
   const getNavBarStyle = () => {
     switch (user?.role) {
-      case "vendor":
+      case "Vendor":
         return { bg: "primary", variant: "dark", name: "Vendor Dashboard" };
-      case "csr":
+      case "CSR":
         return { bg: "", variant: "dark", customStyle: { backgroundColor: "#6a0dad" }, name: "CSR Dashboard" };
       default:
         return { bg: "dark", variant: "dark", name: "Admin Dashboard" };
     }
   };
 
-  const notificationCount = 5;
-
   const { bg, variant, customStyle, name } = getNavBarStyle();
+
+  // Function to open a notification stack
+  const openNotificationStack = () => {
+    notifications.forEach(notificationItem => {
+      notification.open({
+        message: notificationItem.message,
+        description: notificationItem.type,
+        placement: 'bottomRight',
+        duration: 3,
+      });
+    });
+  };
+
+  // Handle clicking on notification icon to show the stack
+  const handleNotificationClick = () => {
+    if (notifications.length > 0) {
+      openNotificationStack();
+    }
+  };
+
+  // Clear all notifications function
+  const handleClearAllNotifications = () => {
+    clearNotifications();  // Assuming clearNotifications will reset the notification state or make an API call
+    notification.info({
+      message: 'Notifications Cleared',
+      description: 'All your notifications have been cleared.',
+      placement: 'topRight',
+      duration: 3,
+    });
+  };
 
   return (
     <Navbar bg={bg} variant={variant} style={customStyle} className="mb-3">
@@ -29,9 +59,9 @@ const NavBar = ({ profileImage }) => {  // notificationCount as prop
         <Navbar.Toggle />
         <Navbar.Collapse className="justify-content-end">
           <Nav className="me-auto">
-            <Nav.Link>
-              <Badge count={notificationCount} overflowCount={99}>
-                <Bell size={18} color="white"/>
+            <Nav.Link onClick={handleNotificationClick}>  
+              <Badge count={unreadCount} overflowCount={99}>
+                <Bell size={20} color='white'/>
               </Badge>
             </Nav.Link>
           </Nav>
@@ -47,13 +77,14 @@ const NavBar = ({ profileImage }) => {  // notificationCount as prop
             }
             id="basic-nav-dropdown"
             align="end"
-            menuVariant={variant === "dark" ? "dark" : "light"} // Match the dropdown theme to the navbar variant
+            menuVariant={variant === "dark" ? "dark" : "light"}
             className="dropdown-menu-end"
           >
             <NavDropdown.Item href="#profile">Profile</NavDropdown.Item>
             <NavDropdown.Item href="#settings">Settings</NavDropdown.Item>
             <NavDropdown.Divider />
-            <NavDropdown.Item onClick={logout}>Logout</NavDropdown.Item> {/* Call logout on click */}
+            <NavDropdown.Item onClick={logout}>Logout</NavDropdown.Item>
+            <NavDropdown.Item onClick={handleClearAllNotifications}>Clear All</NavDropdown.Item> {/* Clear All option */}
           </NavDropdown>
         </Navbar.Collapse>
       </Container>
