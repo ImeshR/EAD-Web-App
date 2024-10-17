@@ -1,68 +1,67 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Table, Button, Badge, Offcanvas, Spinner } from "react-bootstrap";
+import { Table, Button, Badge, Spinner, Offcanvas } from "react-bootstrap";
 import axios from "axios";
 import Swal from "sweetalert2";
-import ReactStars from "react-stars";  // Importing ReactStars for star rating
+import ReactStars from "react-stars"; // Importing ReactStars for star rating
 
 const VendorManagementContent = () => {
   const [vendors, setVendors] = useState([]);
+  const [reviews, setReviews] = useState({}); // To store reviews by vendor ID
   const [loading, setLoading] = useState(true);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
-  const [users, setUsers] = useState([]);
 
-  const handleViewDetails = (vendor) => {
+  // Fetch vendors from the API
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("api/User/vendors", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setVendors(response.data.data); // Assuming "data" contains vendor info
+
+        // Fetch reviews for each vendor
+        response.data.data.forEach(async (vendor) => {
+          const reviewResponse = await axios.get(`api/Review/vendor/${vendor.id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          setReviews((prevReviews) => ({
+            ...prevReviews,
+            [vendor.id]: reviewResponse.data.data, // Store reviews by vendor ID
+          }));
+        });
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching vendors:", error);
+        Swal.fire({
+          title: "Error!",
+          text: "There was an issue fetching vendor data.",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
+        setLoading(false);
+      }
+    };
+
+    fetchVendors();
+  }, []);
+
+  // Handle the opening of the offcanvas to view the vendor's reviews
+  const handleViewComments = (vendor) => {
     setSelectedVendor(vendor);
-
-    // Map users to comments based on customerId
-    const commentsWithUserData = vendor.comments.map((comment) => {
-      // Find the user corresponding to the comment's customerId
-      const user = users.find((user) => user.id === comment.customerId);
-      return {
-        ...comment,
-        userName: user ? user.name : "Unknown", // Assign user name or "Unknown" if not found
-      };
-    });
-
-    setSelectedVendor((prev) => ({
-      ...prev,
-      comments: commentsWithUserData,
-    }));
-
     setShowOffcanvas(true);
   };
 
   const handleCloseOffcanvas = () => {
     setShowOffcanvas(false);
     setSelectedVendor(null);
-  };
-
-  const handleDeleteVendor = async (vendorId) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, delete it!',
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await axios.delete(`api/Vendor/delete/${vendorId}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setVendors((prev) => prev.filter((vendor) => vendor.id !== vendorId));
-        Swal.fire('Deleted!', 'Vendor has been deleted.', 'success');
-      } catch (error) {
-        console.error("Error deleting vendor", error);
-        Swal.fire('Error', 'Failed to delete vendor.', 'error');
-      }
-    }
   };
 
   return (
@@ -91,33 +90,34 @@ const VendorManagementContent = () => {
             {vendors.map((vendor) => (
               <tr key={vendor.id}>
                 <td>{vendor.id}</td>
-                <td>{vendor.vendorName}</td>
+                <td>{vendor.name}</td>
                 <td>
                   <ReactStars
                     count={5}
-                    value={vendor.averageRanking}
+                    value={vendor.averageRanking || 0}
                     size={24}
                     edit={false}
                     color2={"#ffd700"}
                   />
                 </td>
-                <td>{vendor.comments.length} Comments</td>
+                <td>{reviews[vendor.id]?.length || 0} Comments</td> 
                 <td>
-                  <Badge bg="success">Active</Badge>
+                  <Badge bg={vendor.active ? "success" : "warning"}>
+                    {vendor.active ? "Active" : "Inactive"}
+                  </Badge>
                 </td>
                 <td>
                   <Button
                     variant="outline-primary"
                     size="sm"
                     className="me-2"
-                    onClick={() => handleViewDetails(vendor)}
+                    onClick={() => handleViewComments(vendor)} 
                   >
                     View Comments
                   </Button>
                   <Button
                     variant="outline-danger"
                     size="sm"
-                    onClick={() => handleDeleteVendor(vendor.id)}
                   >
                     Delete
                   </Button>
@@ -128,53 +128,34 @@ const VendorManagementContent = () => {
         </Table>
       )}
 
-      {/* Offcanvas for Vendor Comments */}
-      <Offcanvas
-        show={showOffcanvas}
-        onHide={handleCloseOffcanvas}
-        placement="end"
-        scroll={true}
-        backdrop={true}
-        className="custom-offcanvas"
-      >
+      {/* Offcanvas to show reviews */}
+      <Offcanvas show={showOffcanvas} onHide={handleCloseOffcanvas} placement="end">
         <Offcanvas.Header closeButton>
-          <Offcanvas.Title>Vendor Comments</Offcanvas.Title>
+          <Offcanvas.Title>Reviews for {selectedVendor?.name}</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
-          {selectedVendor && (
+          {reviews[selectedVendor?.id]?.length > 0 ? (
             <div>
-              <p><strong>Vendor Name:</strong> {selectedVendor.vendorName}</p>
-              <p><strong>Average Rating:</strong>
-                <ReactStars
-                  count={5}
-                  value={selectedVendor.averageRanking} 
-                  size={24}
-                  edit={false}
-                  color2={"#ffd700"}
-                />
-              </p>
-              <h5>Comments:</h5>
-              <ul>
-                {selectedVendor.comments.map((comment) => (
-                  <li key={comment.id}>
-                    <strong>{comment.userName}:</strong> {comment.text}
-                    <br />
-                    <small>{new Date(comment.date).toLocaleString()}</small>
-                  </li>
-                ))}
-              </ul>
+              {reviews[selectedVendor?.id].map((review) => (
+                <div key={review.id} className="mb-3">
+                  <h6>Rating:</h6>
+                  <ReactStars
+                    count={5}
+                    value={review.rating}
+                    size={24}
+                    edit={false}
+                    color2={"#ffd700"}
+                  />
+                  <p><strong>Comment:</strong> {review.comment}</p>
+                  <p><small>Posted on: {new Date(review.createdAt).toLocaleString()}</small></p>
+                </div>
+              ))}
             </div>
+          ) : (
+            <p>No reviews available.</p>
           )}
         </Offcanvas.Body>
       </Offcanvas>
-
-      <style>
-        {`
-          .custom-offcanvas {
-            width: 800px !important;
-          }
-        `}
-      </style>
     </div>
   );
 };
