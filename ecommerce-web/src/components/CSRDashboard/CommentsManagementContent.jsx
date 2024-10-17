@@ -1,124 +1,136 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import {
-  Table,
-  Button,
-  Modal,
-} from "react-bootstrap";
+import { Table, Button, Spinner, Pagination, Modal } from "react-bootstrap";
+import axios from "axios"; // Import axios for making API calls
+import ReactStars from "react-stars"; // Import ReactStars
+import useVendors from "../../services/hooks/useVendors";
 
-const CommentsManagementContent = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [selectedComment, setSelectedComment] = useState(null);
+const CustomerSupportContent = () => {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [reviewsPerPage] = useState(5); 
+  const { vendors, loading: vendorsLoading } = useVendors();
+  
 
-  const comments = [
-    {
-      commentId: "12345-abcde",
-      vendorId: "67890-fghij",
-      customerId: "11111-aaaaa",
-      orderId: "22222-bbbbb",
-      text: "Great product and fast shipping!",
-      createdAt: "2023-05-01",
-    },
-    {
-      commentId: "67890-fghij",
-      vendorId: "12345-abcde",
-      customerId: "33333-ccccc",
-      orderId: "44444-ddddd",
-      text: "The product was damaged upon arrival.",
-      createdAt: "2023-05-02",
-    },
-  ];
-
-  const handleShowModal = (comment) => {
-    setSelectedComment(comment);
-    setShowModal(true);
+  // Fetch reviews from API
+  const fetchReviews = async () => {
+    try {
+      const response = await axios.get("api/Review", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setReviews(response.data.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      setLoading(false);
+    }
   };
 
-  const handleDeleteComment = (commentId) => {
-    // Logic to delete the comment
-    console.log(`Comment ${commentId} deleted.`);
-    // Optionally, remove the comment from the comments array
+  // Fetch reviews on component mount
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
+  // Get current reviews to display based on pagination
+  const indexOfLastReview = currentPage * reviewsPerPage;
+  const indexOfFirstReview = indexOfLastReview - reviewsPerPage;
+  const currentReviews = reviews.slice(indexOfFirstReview, indexOfLastReview);
+
+  // Handle page change
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Calculate total pages
+  const totalPages = Math.ceil(reviews.length / reviewsPerPage);
+
+  const getVendorName = (vendorId) => {
+    const vendor = vendors.find((v) => v.id === vendorId);
+    return vendor ? vendor.name : "N/A";
   };
 
   return (
     <div>
-      <h2 className="mt-4">Manage Comments</h2>
-      <Table striped bordered hover>
-        <thead>
-          <tr>
-            <th>Comment ID</th>
-            <th>Vendor ID</th>
-            <th>Customer ID</th>
-            <th>Order ID</th>
-            <th>Comment</th>
-            <th>Created At</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {comments.map((comment) => (
-            <tr key={comment.commentId}>
-              <td>{comment.commentId}</td>
-              <td>{comment.vendorId}</td>
-              <td>{comment.customerId}</td>
-              <td>{comment.orderId}</td>
-              <td>{comment.text}</td>
-              <td>{comment.createdAt}</td>
-              <td>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="me-2"
-                  onClick={() => handleShowModal(comment)}
-                >
-                  View
-                </Button>
-                <Button
-                  variant="warning"
-                  size="sm"
-                  className="me-2"
-                  // Logic to flag the comment can be implemented here
-                >
-                  Flag
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDeleteComment(comment.commentId)}
-                >
-                  Delete
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      <h2 className="mt-4">Customer Support</h2>
+      <h3>Customer Reviews</h3>
+      {loading ? (
+        <div className="text-center mt-5">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+        </div>
+      ) : (
+        <>
+          <Table striped bordered hover>
+            <thead>
+              <tr>
+                <th>Review ID</th>
+                <th>Customer ID</th>
+                <th>Vendor ID</th>
+                <th>Rating</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentReviews.length > 0 ? (
+                currentReviews.map((review) => (
+                  <tr key={review.id}>
+                    <td>{review.id}</td>
+                    <td>{review.customerId}</td>
+                    <td>{getVendorName(review.vendorId)}</td>
+                    <td>
+                      <ReactStars
+                        count={5}
+                        value={review.rating}
+                        edit={false}
+                        size={24}
+                        color2={"#ffd700"}
+                      />
+                    </td>
+                    <td>{new Date(review.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="text-center">
+                    No reviews found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
 
-      {/* Modal for Viewing Comment */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Comment Details</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedComment && (
-            <>
-              <p><strong>Comment ID:</strong> {selectedComment.commentId}</p>
-              <p><strong>Vendor ID:</strong> {selectedComment.vendorId}</p>
-              <p><strong>Customer ID:</strong> {selectedComment.customerId}</p>
-              <p><strong>Order ID:</strong> {selectedComment.orderId}</p>
-              <p><strong>Comment:</strong> {selectedComment.text}</p>
-              <p><strong>Created At:</strong> {selectedComment.createdAt}</p>
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
+          {/* Pagination */}
+          <div className="d-flex justify-content-center mt-3">
+            <Pagination>
+              <Pagination.Prev
+                onClick={() =>
+                  currentPage > 1 && handlePageChange(currentPage - 1)
+                }
+              />
+              {Array.from({ length: totalPages }, (_, index) => (
+                <Pagination.Item
+                  key={index + 1}
+                  active={index + 1 === currentPage}
+                  onClick={() => handlePageChange(index + 1)}
+                >
+                  {index + 1}
+                </Pagination.Item>
+              ))}
+              <Pagination.Next
+                onClick={() =>
+                  currentPage < totalPages && handlePageChange(currentPage + 1)
+                }
+              />
+            </Pagination>
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
-export default CommentsManagementContent;
+export default CustomerSupportContent;
