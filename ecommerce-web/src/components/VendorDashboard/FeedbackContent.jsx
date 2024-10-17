@@ -13,7 +13,6 @@ export default function FeedbackContent() {
   const [response, setResponse] = useState("");
   const { user, logout } = useContext(UserContext);
 
-  // Fetch feedback data from the API when the component loads
   const fetchFeedbacks = async () => {
     try {
       const response = await axios.get(`api/Review/vendor/${user.id}`);
@@ -23,7 +22,7 @@ export default function FeedbackContent() {
         rating: feedback.rating,
         text: feedback.comment || "No comment provided",
         createdAt: feedback.createdAt,
-        replies: feedback.replies || [],  // Ensuring replies is always an array
+        replies: feedback.replies || [],
         borderColor:
           feedback.rating >= 4
             ? "success"
@@ -38,7 +37,7 @@ export default function FeedbackContent() {
   };
 
   useEffect(() => {
-    fetchFeedbacks();  // Fetch feedbacks on component mount
+    fetchFeedbacks();
   }, [user.id]);
 
   const handleShowModal = (feedback) => {

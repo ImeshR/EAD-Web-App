@@ -1,41 +1,44 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-const useNotifications = (userId) => {
+const useNotifications = (userId, notificationTypes) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Fetch notifications from the API
-  const fetchNotifications = async () => {
+  // Fetch notifications based on types
+  const fetchNotifications = useCallback(async () => {
     try {
-      const response = await axios.get(`/api/Notification`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      const data = response.data.data;
+      let notificationsData = [];
+      for (let type of notificationTypes) {
+        const response = await axios.get(`/api/Notification/type/${type}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        notificationsData = [...notificationsData, ...response.data];
+      }
 
-      setNotifications(data);
-      const unreadNotifications = data.filter(
-        (notification) => !notification.readStatus
+      setNotifications(notificationsData);
+
+      const unreadNotifications = notificationsData.filter(
+        (notification) => notification.readStatus === false
       );
       setUnreadCount(unreadNotifications.length);
     } catch (error) {
       console.error("Error fetching notifications:", error);
     }
-  };
+  }, [notificationTypes]);
 
   useEffect(() => {
     if (userId) {
       fetchNotifications();
-
-      const intervalId = setInterval(fetchNotifications, 30000);
+      const intervalId = setInterval(fetchNotifications, 60000);
 
       return () => clearInterval(intervalId);
     }
-  }, [userId]);
+  }, []);
 
-  const clearNotifications = () => {
+  const clearNotifications = async () => {
     setNotifications([]);
     setUnreadCount(0);
   };

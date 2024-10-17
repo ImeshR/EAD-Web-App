@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Table, Button, Spinner, Pagination, Modal } from "react-bootstrap";
-import axios from "axios"; // Import axios for making API calls
-import ReactStars from "react-stars"; // Import ReactStars
+import { Card, Button, Spinner, Pagination, Modal } from "react-bootstrap";
+import axios from "axios";
+import ReactStars from "react-stars";
 import useVendors from "../../services/hooks/useVendors";
 
 const CustomerSupportContent = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [reviewsPerPage] = useState(5); 
+  const [reviewsPerPage] = useState(5);
   const { vendors, loading: vendorsLoading } = useVendors();
-  
 
   // Fetch reviews from API
   const fetchReviews = async () => {
@@ -29,33 +28,24 @@ const CustomerSupportContent = () => {
     }
   };
 
-  // Fetch reviews on component mount
   useEffect(() => {
     fetchReviews();
   }, []);
 
-  // Get current reviews to display based on pagination
   const indexOfLastReview = currentPage * reviewsPerPage;
   const indexOfFirstReview = indexOfLastReview - reviewsPerPage;
   const currentReviews = reviews.slice(indexOfFirstReview, indexOfLastReview);
 
-  // Handle page change
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
 
-  // Calculate total pages
   const totalPages = Math.ceil(reviews.length / reviewsPerPage);
-
-  const getVendorName = (vendorId) => {
-    const vendor = vendors.find((v) => v.id === vendorId);
-    return vendor ? vendor.name : "N/A";
-  };
 
   return (
     <div>
-      <h2 className="mt-4">Customer Support</h2>
-      <h3>Customer Reviews</h3>
+      <h2 className="mt-4">Customer Reviews</h2>
+
       {loading ? (
         <div className="text-center mt-5">
           <Spinner animation="border" role="status">
@@ -64,44 +54,46 @@ const CustomerSupportContent = () => {
         </div>
       ) : (
         <>
-          <Table striped bordered hover>
-            <thead>
-              <tr>
-                <th>Review ID</th>
-                <th>Customer ID</th>
-                <th>Vendor ID</th>
-                <th>Rating</th>
-                <th>Created At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentReviews.length > 0 ? (
-                currentReviews.map((review) => (
-                  <tr key={review.id}>
-                    <td>{review.id}</td>
-                    <td>{review.customerId}</td>
-                    <td>{getVendorName(review.vendorId)}</td>
-                    <td>
-                      <ReactStars
-                        count={5}
-                        value={review.rating}
-                        edit={false}
-                        size={24}
-                        color2={"#ffd700"}
-                      />
-                    </td>
-                    <td>{new Date(review.createdAt).toLocaleString()}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center">
-                    No reviews found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </Table>
+          {currentReviews.length > 0 ? (
+            currentReviews.map((review) => (
+              <Card key={review.id} className="mb-3 p-3" style={{ maxWidth: "800px" }}>
+                <Card.Body>
+                  <Card.Title>Review ID: {review.id}</Card.Title>
+                  <Card.Subtitle className="mb-2 text-muted">
+                    Customer ID: {review.customerId}
+                  </Card.Subtitle>
+                  <Card.Text>
+                    <ReactStars
+                      count={5}
+                      value={review.rating}
+                      edit={false}
+                      size={24}
+                      color2={"#ffd700"}
+                    />
+                    <br />
+                    <strong>Comment: </strong>{review.comment}
+                  </Card.Text>
+
+                  {/* Display replies if any */}
+                  {review.replies && review.replies.length > 0 ? (
+                    <Card.Text className="text-success">
+                      <strong>Response:</strong> {review.replies[0].content}
+                    </Card.Text>
+                  ) : (
+                    <Card.Text className="text-muted">No response yet.</Card.Text>
+                  )}
+
+                  <Card.Footer className="text-muted">
+                    <small>
+                      Created At: {new Date(review.createdAt).toLocaleString()}
+                    </small>
+                  </Card.Footer>
+                </Card.Body>
+              </Card>
+            ))
+          ) : (
+            <p>No reviews found.</p>
+          )}
 
           {/* Pagination */}
           <div className="d-flex justify-content-center mt-3">

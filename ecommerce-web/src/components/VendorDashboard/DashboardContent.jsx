@@ -36,7 +36,6 @@ export default function DashboardContent() {
     }
   };
 
-  // Fetch reviews data
   const fetchReviews = async () => {
     try {
       const response = await axios.get(`api/Review/vendor/${user.id}`, {
@@ -56,7 +55,6 @@ export default function DashboardContent() {
     }
   };
 
-  // Fetch order items and calculate total earnings and number of orders
   const fetchOrderItems = async () => {
     try {
       const response = await axios.get(`/api/Order/items/vendor/${user.id}`, {
@@ -67,15 +65,13 @@ export default function DashboardContent() {
 
       const orderItems = response.data.data;
       
-      // Calculate earnings
       const earnings = orderItems.reduce(
         (acc, item) => acc + item.item.priceAtPurchase * item.item.quantity,
         0
       );
       setTotalEarnings(earnings);
 
-      // Count number of orders
-      setNumberOfOrders(orderItems.length); // Set the number of orders
+      setNumberOfOrders(orderItems.length);
     } catch (error) {
       console.error("Error fetching order items data:", error);
     }
