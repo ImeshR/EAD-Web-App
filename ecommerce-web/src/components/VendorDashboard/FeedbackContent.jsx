@@ -14,30 +14,31 @@ export default function FeedbackContent() {
   const { user, logout } = useContext(UserContext);
 
   // Fetch feedback data from the API when the component loads
-  useEffect(() => {
-    const fetchFeedbacks = async () => {
-      try {
-        const response = await axios.get(`api/Review/vendor/${user.id}`);
-        const feedbackData = response.data.data.map((feedback) => ({
-          id: feedback.id,
-          name: `Customer ${feedback.customerId.slice(-4)}`,
-          rating: feedback.rating,
-          text: feedback.comment || "No comment provided",
-          createdAt: feedback.createdAt,
-          borderColor:
-            feedback.rating >= 4
-              ? "success"
-              : feedback.rating >= 2
-              ? "warning"
-              : "danger",
-        }));
-        setFeedbacks(feedbackData);
-      } catch (error) {
-        console.error("Error fetching feedbacks:", error);
-      }
-    };
+  const fetchFeedbacks = async () => {
+    try {
+      const response = await axios.get(`api/Review/vendor/${user.id}`);
+      const feedbackData = response.data.data.map((feedback) => ({
+        id: feedback.id,
+        name: `Customer ${feedback.customerId.slice(-4)}`,
+        rating: feedback.rating,
+        text: feedback.comment || "No comment provided",
+        createdAt: feedback.createdAt,
+        replies: feedback.replies || [],  // Ensuring replies is always an array
+        borderColor:
+          feedback.rating >= 4
+            ? "success"
+            : feedback.rating >= 2
+            ? "warning"
+            : "danger",
+      }));
+      setFeedbacks(feedbackData);
+    } catch (error) {
+      console.error("Error fetching feedbacks:", error);
+    }
+  };
 
-    fetchFeedbacks();
+  useEffect(() => {
+    fetchFeedbacks();  // Fetch feedbacks on component mount
   }, [user.id]);
 
   const handleShowModal = (feedback) => {
@@ -52,16 +53,15 @@ export default function FeedbackContent() {
   };
 
   const handleSendResponse = async () => {
-    // Prepare data for reply
     const replyData = {
-      replyId: user.id,
+      replyId: selectedFeedback.id,
       userId: user.id,
       content: response,
       createdAt: new Date().toISOString(),
     };
 
     try {
-      const response = await axios.post(`api/Review/reply/${selectedFeedback.id}`, replyData, {
+      const response = await axios.put(`api/Review/reply/${selectedFeedback.id}`, replyData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -69,6 +69,7 @@ export default function FeedbackContent() {
 
       if (response.status === 200) {
         Swal.fire("Success!", "Your response has been sent.", "success");
+        fetchFeedbacks(); // Re-fetch feedbacks after sending the response
         handleCloseModal();
       }
     } catch (error) {
@@ -96,7 +97,7 @@ export default function FeedbackContent() {
           });
           if (response.status === 200) {
             Swal.fire("Deleted!", "The feedback has been deleted.", "success");
-            setFeedbacks(feedbacks.filter((feedback) => feedback.id !== id)); // Remove feedback from UI
+            setFeedbacks(feedbacks.filter((feedback) => feedback.id !== id));
           }
         } catch (error) {
           Swal.fire("Error!", "Failed to delete feedback.", "error");
@@ -114,7 +115,7 @@ export default function FeedbackContent() {
           <Card
             className={`mb-3 border-${feedback.borderColor}`}
             key={index}
-            style={{ maxWidth: "800px", position: "relative" }} // Setting max-width and centering the card
+            style={{ maxWidth: "800px", position: "relative" }}
           >
             <Card.Body>
               <Button
@@ -143,6 +144,14 @@ export default function FeedbackContent() {
                 />
               </Card.Subtitle>
               <Card.Text>{feedback.text}</Card.Text>
+
+              {/* Display the response (if available) */}
+              {feedback.replies && feedback.replies.length > 0 && (
+                <Card.Text className="text-success">
+                  <strong>Response:</strong> {feedback.replies[0].content}
+                </Card.Text>
+              )}
+
               <button
                 className="btn btn-sm btn-outline-primary"
                 onClick={() => handleShowModal(feedback)}
@@ -157,10 +166,7 @@ export default function FeedbackContent() {
       )}
 
       {/* Modal for Responding to Feedback */}
-      <Modal
-        show={showModal}
-        onHide={handleCloseModal}
-      >
+      <Modal show={showModal} onHide={handleCloseModal}>
         <Modal.Header closeButton>
           <Modal.Title>Respond to {selectedFeedback?.name}</Modal.Title>
         </Modal.Header>
@@ -179,16 +185,10 @@ export default function FeedbackContent() {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button
-            variant="secondary"
-            onClick={handleCloseModal}
-          >
+          <Button variant="secondary" onClick={handleCloseModal}>
             Cancel
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleSendResponse}
-          >
+          <Button variant="primary" onClick={handleSendResponse}>
             Send Response
           </Button>
         </Modal.Footer>
