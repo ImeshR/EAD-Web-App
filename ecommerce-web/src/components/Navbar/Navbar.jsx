@@ -1,8 +1,10 @@
 import React, { useContext } from 'react';
 import { Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
 import { Search, Bell } from "react-feather";
+import { Badge } from 'antd';  // Import Badge from antd
 import { UserContext } from '../../services/hooks/UserContext'; 
-const NavBar = ({ profileImage }) => {
+
+const NavBar = ({ profileImage }) => {  // notificationCount as prop
   const { user, logout } = useContext(UserContext);
 
   const getNavBarStyle = () => {
@@ -16,6 +18,8 @@ const NavBar = ({ profileImage }) => {
     }
   };
 
+  const notificationCount = 5;
+
   const { bg, variant, customStyle, name } = getNavBarStyle();
 
   return (
@@ -25,17 +29,16 @@ const NavBar = ({ profileImage }) => {
         <Navbar.Toggle />
         <Navbar.Collapse className="justify-content-end">
           <Nav className="me-auto">
-            <Nav.Link href="#search">
-              <Search size={18} />
-            </Nav.Link>
-            <Nav.Link href="#notifications">
-              <Bell size={18} />
+            <Nav.Link>
+              <Badge count={notificationCount} overflowCount={99}>
+                <Bell size={18} color="white"/>
+              </Badge>
             </Nav.Link>
           </Nav>
           <NavDropdown
             title={
               <img
-                src="https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                src={profileImage || "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"}
                 alt="User"
                 className="rounded-circle"
                 width="50"

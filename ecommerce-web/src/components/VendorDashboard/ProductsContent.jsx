@@ -7,6 +7,7 @@ import {
   Offcanvas,
   Row,
   Col,
+  Spinner
 } from "react-bootstrap";
 import useCategories from "../../services/hooks/useCategories";
 import useVendors from "../../services/hooks/useVendors";
@@ -115,7 +116,11 @@ const ProductsContent = () => {
       </Button>
 
       {categoriesLoading ? (
-        <div>Loading categories...</div>
+          <div className="text-center mt-5">
+            <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
+          </div>
       ) : (
         <Table
           striped
