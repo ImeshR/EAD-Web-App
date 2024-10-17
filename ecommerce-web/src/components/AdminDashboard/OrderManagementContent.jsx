@@ -1,88 +1,115 @@
-import React, { useEffect, useState } from "react";
+// OrderManagementContent.js
+import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Row, Col, Table, Button, Badge, Form, Modal, Spinner } from "react-bootstrap";
+import { Row, Col, Table, Button, Badge, Form, Spinner, Pagination } from "react-bootstrap";
 import axios from "axios";
+import Swal from "sweetalert2"; // Import SweetAlert2
+import OrderDetailsOffcanvas from "./OrderDetailsOffcanvas"; // Import the new Offcanvas component
 
 const OrderManagementContent = () => {
   const [orders, setOrders] = useState([]);
-  const [filter, setFilter] = useState("All");
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [currentOrder, setCurrentOrder] = useState(null);
-  const [loading, setLoading] = useState(true); // Loading state
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [ordersPerPage] = useState(10); // Number of orders per page
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [selectedOrder, setSelectedOrder] = useState(null); // Track selected order for offcanvas
+  const [showOffcanvas, setShowOffcanvas] = useState(false); // Control the visibility of the Offcanvas
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setLoading(true); // Set loading to true before fetching data
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("api/Order", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (response.data.message === "Successful") {
-          setOrders(response.data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-      } finally {
-        setLoading(false); // Set loading to false after fetching data
-      }
-    };
-
-    fetchOrders();
-  }, []);
-
-  const handleFilterChange = (e) => {
-    setFilter(e.target.value);
-  };
-
-  const handleUpdateModalShow = (order) => {
-    setCurrentOrder(order);
-    setShowUpdateModal(true);
-  };
-
-  const handleDetailsModalShow = (order) => {
-    setCurrentOrder(order);
-    setShowDetailsModal(true);
-  };
-
-  const handleUpdateModalClose = () => {
-    setShowUpdateModal(false);
-    setCurrentOrder(null);
-  };
-
-  const handleDetailsModalClose = () => {
-    setShowDetailsModal(false);
-    setCurrentOrder(null);
-  };
-
-  const handleUpdateStatus = async (newStatus) => {
+  // Fetch orders data from API
+  const fetchOrders = async () => {
     try {
-      await axios.put(`https://172.28.23.129:7130/api/Order/${currentOrder.id}`, {
-        status: newStatus,
+      setLoading(true);
+      const response = await axios.get("api/Order", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
-      setOrders((prevOrders) =>
-        prevOrders.map((order) =>
-          order.id === currentOrder.id ? { ...order, status: newStatus } : order
-        )
-      );
-      handleUpdateModalClose();
+      const allOrders = response.data.data;
+      setTotalOrders(allOrders.length); // Total orders for pagination
+      setOrders(allOrders.slice((currentPage - 1) * ordersPerPage, currentPage * ordersPerPage));
+      setLoading(false);
     } catch (error) {
-      console.error("Error updating order status:", error);
+      console.error("Error fetching orders:", error);
+      setLoading(false);
     }
   };
 
-  const filteredOrders = orders.filter((order) => {
-    if (filter === "All") return true;
-    return order.status === filter;
-  });
+  // Fetch orders initially
+  useEffect(() => {
+    fetchOrders();
+  }, [currentPage, ordersPerPage]);
+
+  const handleStatusChange = (event) => {
+    setStatusFilter(event.target.value);
+    setCurrentPage(1);
+  };
+
+  const filteredOrders = statusFilter === "All"
+    ? orders
+    : orders.filter((order) =>
+        order.status === "Pending" || order.status === "Delivered" || order.status === "Canceled"
+          ? order.status === statusFilter
+          : false
+      );
+
+  // Handle page change
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Pagination controls
+  const pageCount = Math.ceil(totalOrders / ordersPerPage);
+
+  // Handle order deletion
+  const handleDeleteOrder = async (orderId) => {
+    // Show confirmation dialog using SweetAlert2
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, cancel",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        // Make the API call to delete the order
+        await axios.delete(`api/Order/delete/${orderId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        // Re-fetch the orders after deletion
+        fetchOrders();
+
+        Swal.fire("Deleted!", "The order has been deleted.", "success");
+      } catch (error) {
+        console.error("Error deleting order:", error);
+        Swal.fire("Error!", "There was an issue deleting the order.", "error");
+      }
+    }
+  };
+
+  // Open the offcanvas with the selected order
+  const handleViewOrderDetails = (order) => {
+    setSelectedOrder(order);
+    setShowOffcanvas(true);
+  };
+
+  // Close the offcanvas
+  const handleCloseOffcanvas = () => {
+    setShowOffcanvas(false);
+    setSelectedOrder(null);
+  };
 
   return (
     <div>
       <h2 className="mt-4">Manage Orders</h2>
-      {loading ? ( // Show loading spinner while fetching data
+
+      {loading ? (
         <div className="text-center mt-5">
           <Spinner animation="border" role="status">
             <span className="visually-hidden">Loading...</span>
@@ -95,11 +122,9 @@ const OrderManagementContent = () => {
               <Col md={4}>
                 <Form.Group>
                   <Form.Label>Status</Form.Label>
-                  <Form.Control as="select" value={filter} onChange={handleFilterChange}>
+                  <Form.Control as="select" value={statusFilter} onChange={handleStatusChange}>
                     <option>All</option>
                     <option>Pending</option>
-                    <option>Processing</option>
-                    <option>Shipped</option>
                     <option>Delivered</option>
                     <option>Canceled</option>
                   </Form.Control>
@@ -107,6 +132,7 @@ const OrderManagementContent = () => {
               </Col>
             </Row>
           </Form>
+
           <Table striped bordered hover>
             <thead>
               <tr>
@@ -119,91 +145,85 @@ const OrderManagementContent = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order) => (
-                <tr key={order.id}>
-                  <td>{order.id}</td>
-                  <td>{order.customerId}</td>
-                  <td>{order.totalAmount}</td>
-                  <td>
-                    <Badge bg={order.status === "Pending" ? "warning" : order.status === "Delivered" ? "success" : "info"}>
-                      {order.status}
-                    </Badge>
-                  </td>
-                  <td>{new Date(order.createdAt).toLocaleString()}</td>
-                  <td>
-                    <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleDetailsModalShow(order)}>
-                      View Details
-                    </Button>
-                    <Button variant="outline-success" size="sm" className="me-2" onClick={() => handleUpdateModalShow(order)}>
-                      Update Status
-                    </Button>
-                    <Button variant="outline-danger" size="sm">
-                      Cancel
-                    </Button>
+              {filteredOrders.length > 0 ? (
+                filteredOrders.map((order) => (
+                  <tr key={order.id}>
+                    <td>{order.id}</td>
+                    <td>{order.customerId}</td>
+                    <td>{order.totalAmount}</td>
+                    <td>
+                      <Badge
+                        bg={
+                          order.status === "Delivered"
+                            ? "success"
+                            : order.status === "Canceled"
+                            ? "danger"
+                            : "warning"
+                        }
+                      >
+                        {order.status}
+                      </Badge>
+                    </td>
+                    <td>{new Date(order.createdAt).toLocaleString()}</td>
+                    <td>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => handleViewOrderDetails(order)} // Open offcanvas with order details
+                      >
+                        View Details
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => handleDeleteOrder(order.id)} // Call the delete function
+                      >
+                        Delete
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="text-center">
+                    No orders found.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </Table>
 
-          {/* Update Status Modal */}
-          <Modal show={showUpdateModal} onHide={handleUpdateModalClose}>
-            <Modal.Header closeButton>
-              <Modal.Title>Update Order Status</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <h5>Order ID: {currentOrder?.id}</h5>
-              <h6>Current Status: {currentOrder?.status}</h6>
-              <Form>
-                <Form.Group>
-                  <Form.Label>Select New Status</Form.Label>
-                  <Form.Control as="select" onChange={(e) => handleUpdateStatus(e.target.value)}>
-                    <option>Pending</option>
-                    <option>Processing</option>
-                    <option>Shipped</option>
-                    <option>Delivered</option>
-                    <option>Canceled</option>
-                  </Form.Control>
-                </Form.Group>
-              </Form>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={handleUpdateModalClose}>
-                Close
-              </Button>
-            </Modal.Footer>
-          </Modal>
-
-          {/* Order Details Modal */}
-          <Modal show={showDetailsModal} onHide={handleDetailsModalClose}>
-            <Modal.Header closeButton>
-              <Modal.Title>Order Details</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <h5>Order ID: {currentOrder?.id}</h5>
-              <h6>Status: {currentOrder?.status}</h6>
-              <h6>Created At: {new Date(currentOrder?.createdAt).toLocaleString()}</h6>
-              <h6>Total Amount: {currentOrder?.totalAmount}</h6>
-              <h6>Customer ID: {currentOrder?.customerId}</h6>
-              <h6>Shipping Address: {currentOrder?.details?.shippingAddress || "N/A"}</h6>
-              <h6>Payment Method: {currentOrder?.details?.paymentMethod || "N/A"}</h6>
-              <h6>Items:</h6>
-              <ul>
-                {currentOrder?.details?.items?.map((item, index) => (
-                  <li key={index}>
-                    {item.name} (Quantity: {item.quantity}, Price: {item.price})
-                  </li>
-                )) || <li>No items found.</li>}
-              </ul>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={handleDetailsModalClose}>
-                Close
-              </Button>
-            </Modal.Footer>
-          </Modal>
+          <div className="d-flex justify-content-center">
+            <Pagination>
+              <Pagination.Prev
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              />
+              {[...Array(pageCount)].map((_, index) => (
+                <Pagination.Item
+                  key={index}
+                  active={index + 1 === currentPage}
+                  onClick={() => handlePageChange(index + 1)}
+                >
+                  {index + 1}
+                </Pagination.Item>
+              ))}
+              <Pagination.Next
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === pageCount}
+              />
+            </Pagination>
+          </div>
         </>
       )}
+
+      {/* Order Details Offcanvas */}
+      <OrderDetailsOffcanvas
+        show={showOffcanvas}
+        onHide={handleCloseOffcanvas}
+        order={selectedOrder}
+      />
     </div>
   );
 };
