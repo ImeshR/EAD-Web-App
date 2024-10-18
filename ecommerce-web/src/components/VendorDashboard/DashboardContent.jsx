@@ -13,7 +13,7 @@ export default function DashboardContent() {
   const { user, logout } = useContext(UserContext);
 
   const metrics = [
-    { title: "Total Sales", value: `$${totalEarnings.toFixed(2)} 💵`, color: "warning" },
+    { title: "Total Sales", value: `LKR ${totalEarnings.toFixed(2)} 💵`, color: "warning" },
     { title: "Number of Orders", value: `${numberOfOrders} 📦`, color: "info" },
     { title: "Vendor Rating", value: `${rating}/5 ⭐`, color: "danger" },
   ];

@@ -3,6 +3,7 @@ import axios from "axios";
 
 const useVendors = () => {
   const [vendors, setVendors] = useState([]);
+  const [count , setCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -11,16 +12,17 @@ const useVendors = () => {
         const response = await axios.get("api/User/vendors", {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
-        setVendors(
-          response.data.data.map((vendor) => ({
-            id: vendor.id,
-            name: vendor.name,
-            email: vendor.email,
-            phoneNumber: vendor.phoneNumber,
-            address: vendor.address,
-            active: vendor.active,
-          }))
-        );
+        const vendorList = response.data.data.map((vendor) => ({
+          id: vendor.id,
+          name: vendor.name,
+          email: vendor.email,
+          phoneNumber: vendor.phoneNumber,
+          address: vendor.address,
+          active: vendor.active,
+        }));
+        setVendors(vendorList);
+        setCount(vendorList.length);
+        
       } catch (error) {
         console.error("Error fetching vendors:", error);
       } finally {
@@ -31,7 +33,7 @@ const useVendors = () => {
     fetchVendors();
   }, []);
 
-  return { vendors, loading };
+  return { vendors, loading , count};
 };
 
 export default useVendors;
