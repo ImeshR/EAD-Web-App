@@ -32,7 +32,7 @@ const useNotifications = (userId, notificationTypes) => {
   useEffect(() => {
     if (userId) {
       fetchNotifications();
-      const intervalId = setInterval(fetchNotifications, 60000);
+      const intervalId = setInterval(fetchNotifications, 10000);
 
       return () => clearInterval(intervalId);
     }

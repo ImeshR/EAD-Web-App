@@ -1,9 +1,10 @@
 import React, { useContext, useEffect } from "react";
 import { Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
 import { Bell } from "react-feather";
-import { Badge, notification } from "antd";
+import { Badge, notification , Button } from "antd";
 import { UserContext } from "../../services/hooks/UserContext";
 import useNotifications from "../../services/hooks/useNotifications";
+import axios from "axios";
 
 const NavBar = ({ profileImage }) => {
   const { user, logout } = useContext(UserContext);
@@ -20,11 +21,13 @@ const NavBar = ({ profileImage }) => {
   };
 
   const notificationTypes = getNotificationTypes(user?.role);
-  const { notifications, unreadCount, clearNotifications } = useNotifications(user?.id, notificationTypes);
+  const { notifications, unreadCount, clearNotifications, removeNotificationFromState } = useNotifications(
+    user?.id,
+    notificationTypes
+  );
 
-  // Log unreadCount to see if it's updated correctly
   useEffect(() => {
-    console.log("Unread Count:", unreadCount); // Check if unreadCount is updating
+    console.log("Unread Count:", unreadCount);
   }, [unreadCount]);
 
   const getNavBarStyle = () => {
@@ -49,11 +52,50 @@ const NavBar = ({ profileImage }) => {
     notifications.forEach((notificationItem) => {
       notification.open({
         message: notificationItem.message,
-        description: notificationItem.type,
+        description: (
+          <div>
+            {notificationItem.type}
+            <Button
+              size="small"
+              onClick={() => handleDeleteNotification(notificationItem.id)}
+              style={{ marginLeft: "10px", color: "red" }}
+            >
+              Close
+            </Button>
+          </div>
+        ),
         placement: "bottomRight",
         duration: 3,
       });
     });
+  };
+
+  const handleDeleteNotification = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`api/Notification/delete/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      removeNotificationFromState(id);
+
+      notification.success({
+        message: "Notification Deleted",
+        description: `Notification with ID: ${id} has been deleted.`,
+        placement: "topRight",
+        duration: 3,
+      });
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      notification.success({
+        message: "Notification Deleted",
+        description: `Notification with ID: ${id} has been deleted.`,
+        placement: "topRight",
+        duration: 3,
+      });
+    }
   };
 
   const handleNotificationClick = () => {
