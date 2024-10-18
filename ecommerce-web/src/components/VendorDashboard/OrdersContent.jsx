@@ -17,7 +17,7 @@ export default function OrdersContent() {
     try {
       const response = await axios.get(`/api/Order/items/vendor/${user.id}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`, // Use token if needed
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
 
@@ -33,13 +33,11 @@ export default function OrdersContent() {
     fetchOrders();
   }, []);
 
-  // Open the Offcanvas and set selected order
   const handleShowOffcanvas = (order) => {
     setSelectedOrder(order);
     setShowOffcanvas(true);
   };
 
-  // Handle closing the Offcanvas
   const handleCloseOffcanvas = () => {
     setShowOffcanvas(false);
     setSelectedOrder(null);

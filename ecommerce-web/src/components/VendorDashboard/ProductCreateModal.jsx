@@ -1,14 +1,15 @@
-import React, { useState , useContext } from "react";
+import React, { useState, useContext } from "react";
 import axios from "axios";
 import { Button, Form, Offcanvas, Spinner } from "react-bootstrap";
+import { Progress } from "antd";
 import useCategories from "../../services/hooks/useCategories";
 import useVendors from "../../services/hooks/useVendors";
 import Swal from "sweetalert2";
 import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import { storage } from "../../services/firebase-config";
-import { UserContext } from '../../services/hooks/UserContext'; 
+import { UserContext } from "../../services/hooks/UserContext";
 
-const ProductCreateModal = ({ show, onHide , onProductCreated }) => {
+const ProductCreateModal = ({ show, onHide, onProductCreated }) => {
   const { categories, loading: categoriesLoading } = useCategories();
   const { vendors, loading: vendorsLoading } = useVendors();
   const { user, logout } = useContext(UserContext);
@@ -23,6 +24,8 @@ const ProductCreateModal = ({ show, onHide , onProductCreated }) => {
     active: true,
     vendorId: user.id,
   });
+
+  const [uploadProgress, setUploadProgress] = useState([]);
 
   const handleCategorySelect = (e) => {
     const selectedCategoryId = e.target.value;
@@ -43,22 +46,22 @@ const ProductCreateModal = ({ show, onHide , onProductCreated }) => {
   const handleImageUpload = async (e) => {
     const files = e.target.files;
     const uploadedImages = [];
+    const progressArray = [...uploadProgress];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const storageRef = ref(
-        storage,
-        `product_images/${file.name + Date.now()}`
-      );
+      const storageRef = ref(storage, `product_images/${file.name + Date.now()}`);
 
       const uploadTask = uploadBytesResumable(storageRef, file);
 
       uploadTask.on(
         "state_changed",
         (snapshot) => {
-          const progress =
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           console.log(`Upload is ${progress}% done`);
+
+          progressArray[i] = progress;
+          setUploadProgress([...progressArray]);
         },
         (error) => {
           console.error("Image upload failed:", error);
@@ -78,7 +81,7 @@ const ProductCreateModal = ({ show, onHide , onProductCreated }) => {
   };
 
   const handleSubmit = async () => {
-    const currentDate = new Date().toISOString(); 
+    const currentDate = new Date().toISOString();
     const newProduct = {
       ...product,
       createdAt: currentDate,
@@ -97,7 +100,7 @@ const ProductCreateModal = ({ show, onHide , onProductCreated }) => {
       });
 
       Swal.fire("Success!", "Product created successfully.", "success");
-      
+
       if (onProductCreated) onProductCreated();
 
       onHide();
@@ -107,25 +110,16 @@ const ProductCreateModal = ({ show, onHide , onProductCreated }) => {
     }
   };
 
-
   return (
     <>
-      <Offcanvas
-        show={show}
-        onHide={onHide}
-        placement="end"
-        className="custom-offcanvas"
-      >
+      <Offcanvas show={show} onHide={onHide} placement="end" className="custom-offcanvas">
         <Offcanvas.Header closeButton>
           <Offcanvas.Title>Create New Product</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
           {categoriesLoading ? (
             <div className="d-flex justify-content-center">
-              <Spinner
-                animation="border"
-                role="status"
-              >
+              <Spinner animation="border" role="status">
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
             </div>
@@ -152,18 +146,13 @@ const ProductCreateModal = ({ show, onHide , onProductCreated }) => {
                   placeholder="Enter product description"
                 />
               </Form.Group>
+
               <Form.Group controlId="formCategorySelect">
                 <Form.Label>Category</Form.Label>
-                <Form.Control
-                  as="select"
-                  onChange={handleCategorySelect}
-                >
+                <Form.Control as="select" onChange={handleCategorySelect}>
                   <option value="">Select Category</option>
                   {categories.map((category) => (
-                    <option
-                      key={category.id}
-                      value={category.id}
-                    >
+                    <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
                   ))}
@@ -194,18 +183,13 @@ const ProductCreateModal = ({ show, onHide , onProductCreated }) => {
 
               <Form.Group controlId="formProductImages">
                 <Form.Label>Product Images</Form.Label>
-                <Form.Control
-                  type="file"
-                  multiple
-                  onChange={handleImageUpload}
-                />
+                <Form.Control type="file" multiple onChange={handleImageUpload} />
+                {uploadProgress.map((progress, index) => (
+                  <Progress key={index} percent={Math.round(progress)} />
+                ))}
               </Form.Group>
 
-              <Button
-                variant="primary"
-                onClick={handleSubmit}
-                className="mt-3"
-              >
+              <Button variant="primary" onClick={handleSubmit} className="mt-3">
                 Create Product
               </Button>
             </Form>
@@ -214,10 +198,10 @@ const ProductCreateModal = ({ show, onHide , onProductCreated }) => {
       </Offcanvas>
       <style>
         {`
-            .custom-offcanvas {
-              width: 800px !important;
-            }
-          `}
+          .custom-offcanvas {
+            width: 800px !important;
+          }
+        `}
       </style>
     </>
   );

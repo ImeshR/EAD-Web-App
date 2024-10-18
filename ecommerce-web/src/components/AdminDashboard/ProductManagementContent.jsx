@@ -36,9 +36,12 @@ const VendorManagementContent = () => {
       const response = await axios.get("api/Product", {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-
+  
       if (response.data && Array.isArray(response.data.data)) {
-        setProducts(response.data.data);
+        const sortedProducts = response.data.data.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setProducts(sortedProducts);
       } else {
         throw new Error("Invalid data format received from API");
       }

@@ -65,7 +65,7 @@ const UserManagementContent = () => {
 
   const getRoleName = (roleId) => {
     const role = roles.find((r) => r.id === roleId);
-    return role ? role.name : "Unknown Role"; // Fallback if role not found
+    return role ? role.name : "Unknown Role";
   };
 
   const handleEditUser = (user) => {
